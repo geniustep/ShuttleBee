@@ -40,7 +40,7 @@
     <menuitem id="menu_shuttle_settings"
               name="Settings"
               parent="menu_shuttle_configuration"
-              action="base.action_res_config_settings"
+              action="base.res_config_setting_act_window"
               sequence="99"/>
 
     <!-- Reports Menu -->

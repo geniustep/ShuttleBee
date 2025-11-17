@@ -6,3 +6,5 @@ from . import shuttle_stop
 from . import res_partner
 from . import shuttle_notification
 from . import res_config_settings
+from . import shuttle_passenger_group
+from . import shuttle_vehicle

@@ -20,6 +20,11 @@ class ShuttleTripLine(models.Model):
         ondelete='cascade',
         index=True
     )
+    group_line_id = fields.Many2one(
+        'shuttle.passenger.group.line',
+        string='Group Line',
+        help='Passenger group line this entry originated from'
+    )
     passenger_id = fields.Many2one(
         'res.partner',
         string='Passenger',
@@ -32,13 +37,34 @@ class ShuttleTripLine(models.Model):
     pickup_stop_id = fields.Many2one(
         'shuttle.stop',
         string='Pickup Stop',
-        domain=[('stop_type', 'in', ['pickup', 'both'])],
-        required=True
+        domain=[('stop_type', 'in', ['pickup', 'both'])]
     )
     dropoff_stop_id = fields.Many2one(
         'shuttle.stop',
         string='Dropoff Stop',
         domain=[('stop_type', 'in', ['dropoff', 'both'])]
+    )
+
+    # GPS Coordinates (used when passenger has no assigned stop)
+    pickup_latitude = fields.Float(
+        string='Pickup Latitude',
+        digits=(10, 7),
+        help='GPS latitude for custom pickup location'
+    )
+    pickup_longitude = fields.Float(
+        string='Pickup Longitude',
+        digits=(10, 7),
+        help='GPS longitude for custom pickup location'
+    )
+    dropoff_latitude = fields.Float(
+        string='Dropoff Latitude',
+        digits=(10, 7),
+        help='GPS latitude for custom dropoff location'
+    )
+    dropoff_longitude = fields.Float(
+        string='Dropoff Longitude',
+        digits=(10, 7),
+        help='GPS longitude for custom dropoff location'
     )
 
     # Capacity
@@ -56,7 +82,7 @@ class ShuttleTripLine(models.Model):
         ('boarded', 'Boarded'),
         ('absent', 'Absent'),
         ('dropped', 'Dropped Off')
-    ], string='Status', default='planned', required=True, tracking=True)
+    ], string='Status', default='planned', required=True)
 
     # Sequence
     sequence = fields.Integer(
@@ -108,12 +134,73 @@ class ShuttleTripLine(models.Model):
         ('positive_seats', 'CHECK(seat_count > 0)',
          'Seat count must be positive!'),
     ]
+    
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Auto-set group_line_id if passenger is in the trip's group"""
+        for vals in vals_list:
+            if vals.get('trip_id') and vals.get('passenger_id') and not vals.get('group_line_id'):
+                trip = self.env['shuttle.trip'].browse(vals['trip_id'])
+                if trip.group_id:
+                    group_line = trip.group_id.line_ids.filtered(
+                        lambda l: l.passenger_id.id == vals['passenger_id']
+                    )
+                    if group_line:
+                        vals['group_line_id'] = group_line[0].id
+        return super().create(vals_list)
+    
+    def write(self, vals):
+        """Auto-set group_line_id if passenger is in the trip's group"""
+        if vals.get('passenger_id') or vals.get('trip_id'):
+            for line in self:
+                if line.trip_id and line.trip_id.group_id and not line.group_line_id:
+                    if vals.get('passenger_id'):
+                        passenger_id = vals['passenger_id']
+                    elif line.passenger_id:
+                        passenger_id = line.passenger_id.id
+                    else:
+                        continue
+                    
+                    group_line = line.trip_id.group_id.line_ids.filtered(
+                        lambda l: l.passenger_id.id == passenger_id
+                    )
+                    if group_line:
+                        vals['group_line_id'] = group_line[0].id
+        return super().write(vals)
+    
+    @api.constrains('trip_id', 'group_line_id', 'passenger_id')
+    def _check_group_line_required(self):
+        """Ensure trip line comes from a passenger group or passenger is in the same group"""
+        for line in self:
+            if line.trip_id and line.trip_id.group_id and not line.group_line_id:
+                # Check if passenger is in the same group
+                group = line.trip_id.group_id
+                passenger_in_group = group.line_ids.filtered(
+                    lambda l: l.passenger_id.id == line.passenger_id.id
+                )
+                
+                if not passenger_in_group:
+                    raise ValidationError(_(
+                        'Passenger %s is not in the Passenger Group "%s". '
+                        'Please add the passenger to the group first, or reload passengers from the group.'
+                    ) % (line.passenger_id.name, group.name))
 
-    @api.constrains('pickup_stop_id', 'dropoff_stop_id')
+    @api.constrains('pickup_stop_id', 'pickup_latitude', 'pickup_longitude',
+                    'dropoff_stop_id', 'dropoff_latitude', 'dropoff_longitude', 'trip_type')
     def _check_stops(self):
         for line in self:
-            if line.dropoff_stop_id and line.pickup_stop_id == line.dropoff_stop_id:
+            # Pickup: must have either stop or coordinates
+            if not line.pickup_stop_id and not (line.pickup_latitude and line.pickup_longitude):
+                raise ValidationError(_('Pickup location must have either a Stop or GPS coordinates!'))
+            
+            # Dropoff: if stops are provided, they must be different
+            if line.dropoff_stop_id and line.pickup_stop_id and line.pickup_stop_id == line.dropoff_stop_id:
                 raise ValidationError(_('Pickup and dropoff stops must be different!'))
+            
+            # For dropoff trips: dropoff location must have either stop or coordinates
+            if line.trip_type == 'dropoff':
+                if not line.dropoff_stop_id and not (line.dropoff_latitude and line.dropoff_longitude):
+                    raise ValidationError(_('Dropoff location must have either a Stop or GPS coordinates for dropoff trips!'))
 
     # Methods
     def action_mark_boarded(self):
@@ -150,12 +237,13 @@ class ShuttleTripLine(models.Model):
             template = self.env.ref('shuttlebee.mail_template_approaching', raise_if_not_found=False)
 
             # Prepare message content
+            pickup_location = line.pickup_stop_id.name if line.pickup_stop_id else _('your location')
             message_content = _(
                 'Hello %s, Driver %s is approaching pickup point %s. ETA: 10 minutes.'
             ) % (
                 line.passenger_id.name,
                 line.driver_id.name,
-                line.pickup_stop_id.name
+                pickup_location
             )
 
             self.env['shuttle.notification'].create({
@@ -182,12 +270,13 @@ class ShuttleTripLine(models.Model):
             template = self.env.ref('shuttlebee.mail_template_arrived', raise_if_not_found=False)
 
             # Prepare message content
+            pickup_location = line.pickup_stop_id.name if line.pickup_stop_id else _('your location')
             message_content = _(
                 'Dear %s, Driver %s has arrived at %s. Please head to the shuttle immediately!'
             ) % (
                 line.passenger_id.name,
                 line.driver_id.name,
-                line.pickup_stop_id.name
+                pickup_location
             )
 
             self.env['shuttle.notification'].create({
@@ -209,15 +298,52 @@ class ShuttleTripLine(models.Model):
 
     @api.onchange('passenger_id')
     def _onchange_passenger_id(self):
-        """Auto-fill stops from passenger defaults"""
-        if self.passenger_id:
+        """Auto-fill stops or coordinates from passenger defaults and set group_line_id"""
+        if self.passenger_id and self.trip_id and self.trip_id.group_id:
+            # Auto-set group_line_id if passenger is in the trip's group
+            group = self.trip_id.group_id
+            group_line = group.line_ids.filtered(
+                lambda l: l.passenger_id.id == self.passenger_id.id
+            )
+            if group_line:
+                self.group_line_id = group_line[0]
+                # Use stops from group line if available
+                if group_line[0].pickup_stop_id:
+                    self.pickup_stop_id = group_line[0].pickup_stop_id
+                if group_line[0].dropoff_stop_id:
+                    self.dropoff_stop_id = group_line[0].dropoff_stop_id
+                if group_line[0].seat_count:
+                    self.seat_count = group_line[0].seat_count
+            else:
+                # If passenger not in group, use defaults from passenger
+                self.pickup_stop_id = self.passenger_id.default_pickup_stop_id
+                self.dropoff_stop_id = self.passenger_id.default_dropoff_stop_id
+        elif self.passenger_id:
+            # Set default stops from passenger
             self.pickup_stop_id = self.passenger_id.default_pickup_stop_id
             self.dropoff_stop_id = self.passenger_id.default_dropoff_stop_id
+        
+        if self.passenger_id:
+            # If no pickup stop but passenger has coordinates, use them
+            if not self.pickup_stop_id and self.passenger_id.shuttle_latitude and self.passenger_id.shuttle_longitude:
+                self.pickup_latitude = self.passenger_id.shuttle_latitude
+                self.pickup_longitude = self.passenger_id.shuttle_longitude
+            
+            # If no dropoff stop but passenger has coordinates, use them for dropoff too
+            if not self.dropoff_stop_id and self.passenger_id.shuttle_latitude and self.passenger_id.shuttle_longitude:
+                self.dropoff_latitude = self.passenger_id.shuttle_latitude
+                self.dropoff_longitude = self.passenger_id.shuttle_longitude
 
     def name_get(self):
         """Custom name display"""
         result = []
         for line in self:
-            name = f"{line.passenger_id.name} - {line.pickup_stop_id.name}"
+            if line.pickup_stop_id:
+                location = line.pickup_stop_id.name
+            elif line.pickup_latitude and line.pickup_longitude:
+                location = f"GPS ({line.pickup_latitude:.4f}, {line.pickup_longitude:.4f})"
+            else:
+                location = _('No location')
+            name = f"{line.passenger_id.name} - {location}"
             result.append((line.id, name))
         return result

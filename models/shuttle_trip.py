@@ -43,10 +43,17 @@ class ShuttleTrip(models.Model):
         index=True
     )
     vehicle_id = fields.Many2one(
-        'res.partner',
+        'shuttle.vehicle',
         string='Vehicle',
         tracking=True,
         help='Vehicle used for this trip'
+    )
+    group_id = fields.Many2one(
+        'shuttle.passenger.group',
+        string='Passenger Group',
+        required=True,
+        tracking=True,
+        help='Group template used to generate this trip. Passengers will be loaded automatically from this group.'
     )
 
     # Date & Time
@@ -166,6 +173,13 @@ class ShuttleTrip(models.Model):
         for trip in self:
             if trip.booked_seats > trip.total_seats:
                 raise ValidationError(_('Booked seats cannot exceed total seats!'))
+    
+    @api.constrains('group_id', 'line_ids')
+    def _check_group_required(self):
+        """Ensure trip has a group and passengers come from group"""
+        for trip in self:
+            if not trip.group_id:
+                raise ValidationError(_('Passenger Group is required for all trips!'))
 
     @api.constrains('planned_start_time', 'planned_arrival_time')
     def _check_times(self):
@@ -319,6 +333,33 @@ class ShuttleTrip(models.Model):
             name = f"[{trip.reference}] {trip.name} - {trip.date}"
             result.append((trip.id, name))
         return result
+
+    @api.onchange('vehicle_id')
+    def _onchange_vehicle_id(self):
+        for trip in self:
+            if trip.vehicle_id:
+                trip.total_seats = trip.vehicle_id.seat_capacity
+                if trip.vehicle_id.driver_id:
+                    trip.driver_id = trip.vehicle_id.driver_id
+
+    @api.onchange('group_id')
+    def _onchange_group_id(self):
+        """Load passengers from selected group"""
+        for trip in self:
+            if trip.group_id:
+                # Set default values from group
+                if not trip.driver_id and trip.group_id.driver_id:
+                    trip.driver_id = trip.group_id.driver_id
+                if not trip.vehicle_id and trip.group_id.vehicle_id:
+                    trip.vehicle_id = trip.group_id.vehicle_id
+                if not trip.total_seats and trip.group_id.total_seats:
+                    trip.total_seats = trip.group_id.total_seats
+                
+                # Load passengers from group (only if trip is new or has no lines)
+                if not trip.line_ids:
+                    line_vals = trip.group_id._prepare_trip_line_values(trip_type=trip.trip_type)
+                    # We'll create lines after save, but show them in UI
+                    trip.line_ids = [(0, 0, vals) for vals in line_vals]
 
     # Cron Methods
     @api.model

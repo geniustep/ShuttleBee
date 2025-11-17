@@ -1,232 +1,651 @@
-# 🐝 ShuttleBee - Odoo 18 Shuttle Management Module
+# 🐝 ShuttleBee - نظام إدارة النقل المدرسي الشامل
 
-## Overview
+## 📋 نظرة عامة
 
-ShuttleBee is a comprehensive shuttle transportation management system for Odoo 18. It helps organizations efficiently manage shuttle services, track passengers, coordinate drivers, and automate notifications.
+**ShuttleBee** هو نظام شامل لإدارة خدمات النقل المدرسي والشركات في Odoo 18. يوفر حلولاً متكاملة لإدارة الرحلات، تتبع الركاب، تنسيق السائقين، وأتمتة الإشعارات.
 
-## Features
+### 🎯 الحالات الاستخدامية
 
-### 🚌 Trip Management
-- Plan and schedule pickup/dropoff trips
-- Real-time trip status tracking (Draft → Planned → Ongoing → Done)
-- Driver and vehicle assignment
-- Capacity management with seat allocation
-- Calendar and Kanban views for easy visualization
-
-### 👥 Passenger Management
-- Complete passenger profiles with shuttle preferences
-- Default pickup/dropoff stop assignments
-- Trip history and attendance statistics
-- Attendance rate calculation
-- Boarding status tracking
-
-### 📍 Stop Management
-- Define pickup and dropoff locations
-- GPS coordinates support
-- Address details and city-based organization
-- Usage statistics per stop
-- Sequence-based stop ordering
-
-### 🔔 Smart Notifications
-- Multi-channel notifications (SMS, WhatsApp, Email, Push)
-- Automated approaching notifications
-- Arrival notifications
-- Trip cancellation alerts
-- Configurable message templates
-- Notification delivery tracking
-
-### 📊 Reports & Analytics
-- Trip reports with passenger lists
-- Daily trip summaries
-- Attendance reports
-- Occupancy rate tracking
-- Notification logs
-
-### 🔐 Security
-Four-tier role-based access control:
-- **User**: View own trips
-- **Driver**: Manage assigned trips, update passenger status
-- **Dispatcher**: Create and manage all trips
-- **Manager**: Full access including settings and deletion
-
-## Installation
-
-1. Copy the `shuttlebee` folder to your Odoo addons directory
-2. Update the apps list: `odoo-bin -u all -d your_database`
-3. Install the module from Apps menu
-4. Configure settings in Settings → ShuttleBee
-
-## Configuration
-
-### Basic Setup
-
-1. **Create Stops** (Configuration → Stops)
-   - Add pickup and dropoff locations
-   - Set GPS coordinates (optional)
-   - Configure stop types (Pickup/Dropoff/Both)
-
-2. **Register Passengers** (Operations → Passengers)
-   - Mark contacts as shuttle passengers
-   - Assign default pickup/dropoff stops
-   - Add special requirements in shuttle notes
-
-3. **Configure Notifications** (Settings → ShuttleBee)
-   - Set default notification channel
-   - Configure timing for approaching notifications
-   - Set absence timeout
-   - Add API credentials for SMS/WhatsApp
-
-### API Configuration
-
-#### SMS Integration
-Configure your SMS gateway in Settings:
-```
-API URL: https://api.your-sms-provider.com
-API Key: your-api-key
-```
-
-#### WhatsApp Integration
-Configure WhatsApp Business API:
-```
-API URL: https://api.whatsapp.com
-API Key: your-api-key
-```
-
-## Usage
-
-### Creating a Trip
-
-1. Go to Operations → Trips → Create
-2. Fill in trip details:
-   - Trip name and type (Pickup/Dropoff)
-   - Date and time
-   - Driver and vehicle
-   - Total seats
-3. Add passengers in the Passengers tab
-4. Select pickup/dropoff stops for each passenger
-5. Confirm the trip
-
-### Managing Trips
-
-**Driver Workflow:**
-1. View assigned trips
-2. Start the trip when ready
-3. Send approaching notifications to passengers
-4. Mark passengers as boarded/absent
-5. Complete the trip upon arrival
-
-**Automated Features:**
-- System automatically sends approaching notifications
-- Auto-marks absent passengers after timeout
-- Sends daily summaries to managers
-
-## Scheduled Tasks
-
-Three automated cron jobs run in the background:
-
-1. **Send Approaching Notifications** (Every 5 minutes)
-   - Sends notifications to passengers when driver is approaching
-
-2. **Mark Absent Passengers** (Every 10 minutes)
-   - Automatically marks passengers as absent after timeout
-
-3. **Daily Summary** (Once per day)
-   - Sends daily trip summary emails to managers
-
-## Database Schema
-
-### Main Models
-
-- `shuttle.trip` - Trip records
-- `shuttle.trip.line` - Passenger lines in trips
-- `shuttle.stop` - Pickup/dropoff locations
-- `shuttle.notification` - Notification log
-- `res.partner` - Extended for passenger info
-- `res.config.settings` - Module configuration
-
-## Technical Details
-
-- **Odoo Version**: 18.0
-- **Python Version**: 3.10+
-- **Dependencies**: base, mail, contacts
-- **License**: LGPL-3
-- **Languages**: Arabic (primary), English (secondary)
-
-## Customization
-
-### Adding Custom Notification Channels
-
-Extend `shuttle.notification` model:
-
-```python
-def _send_custom_channel(self):
-    # Your custom implementation
-    pass
-```
-
-### Creating Custom Reports
-
-Add new report templates in `report/` directory following QWeb format.
-
-### Extending Trip Workflow
-
-Override trip methods to add custom states or actions:
-
-```python
-class ShuttleTrip(models.Model):
-    _inherit = 'shuttle.trip'
-
-    def action_custom_step(self):
-        # Your custom logic
-        pass
-```
-
-## Troubleshooting
-
-### Notifications not sending
-1. Check API credentials in Settings
-2. Verify passenger has phone/email configured
-3. Check notification log for error messages
-
-### Cron jobs not running
-1. Verify cron jobs are active in Settings → Technical → Scheduled Actions
-2. Check Odoo server is running with `--max-cron-threads` > 0
-
-### Permission errors
-1. Verify user has correct security group assigned
-2. Check record rules in Settings → Technical → Record Rules
-
-## Roadmap
-
-Future enhancements planned:
-
-- [ ] Mobile driver app (React Native)
-- [ ] Real-time GPS tracking
-- [ ] Route optimization algorithms
-- [ ] Passenger self-service portal
-- [ ] Payment integration
-- [ ] Advanced analytics dashboard
-- [ ] Weather integration
-- [ ] Traffic alerts
-
-## Support
-
-For support, bug reports, or feature requests:
-
-- **Email**: support@yourcompany.com
-- **Website**: https://www.yourcompany.com
-- **Documentation**: https://docs.yourcompany.com/shuttlebee
-
-## Credits
-
-Developed by Your Company
-
-## License
-
-LGPL-3
+- **المدارس الخاصة**: إدارة نقل الطلاب من وإلى المدرسة
+- **الشركات**: خدمات النقل للموظفين
+- **الفنادق**: خدمات النقل من وإلى المطار
+- **المنظمات**: أي خدمة نقل منظمة للمجموعات
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: 2025
-**Status**: Production Ready
+## ✨ الميزات الرئيسية
+
+### 1. 🚌 إدارة الرحلات (Trip Management)
+
+#### **Passenger Groups (مجموعات الركاب)**
+- **القالب الثابت**: إنشاء قوالب للمسارات مع الركاب الثابتين
+- **إعادة الاستخدام**: استخدام نفس المجموعة لإنشاء رحلات يومية متعددة
+- **المرونة**: دعم Stops ثابتة أو إحداثيات GPS للركاب
+- **الإعدادات الافتراضية**: سائق افتراضي، مركبة افتراضية، عدد المقاعد
+- **Destination Stop**: نقطة الوجهة المشتركة (مثل المدرسة/العمل) - تُستخدم تلقائياً للركاب بدون Stop محدد
+- **اقتراح أقرب Stop**: زر ذكي لحساب المسافة واقتراح أقرب Stop بناءً على إحداثيات GPS للراكب
+
+#### **Shuttle Trips (الرحلات الفعلية)**
+- **ربط إلزامي**: كل رحلة مرتبطة بمجموعة ركاب (Passenger Group)
+- **حالات الرحلة**: Draft → Planned → Ongoing → Done
+- **تتبع فوري**: تحديث الحالة في الوقت الفعلي
+- **إحصائيات**: معدل الإشغال، الحضور، الغياب
+
+#### **مولد الرحلات (Trip Wizard)**
+- إنشاء رحلة صباحية و/أو مسائية من مجموعة واحدة
+- تعبئة تلقائية للركاب من المجموعة
+- تعيين توقيتات منفصلة لكل رحلة
+
+### 2. 👥 إدارة الركاب (Passenger Management)
+
+- **ملفات الركاب**: معلومات كاملة مع تفضيلات النقل
+- **نقاط التجمع الافتراضية**: تعيين Stop افتراضي للصعود والنزول
+- **إحداثيات GPS**: دعم الإحداثيات للركاب بدون Stop ثابت
+- **حساب المسافة**: حساب تلقائي للمسافة بين إحداثيات الراكب و Stops القريبة
+- **اقتراح ذكي**: زر "Suggest Nearest Stop" لحساب المسافة واقتراح أقرب Stop
+- **سجل الرحلات**: تاريخ كامل لجميع الرحلات
+- **إحصائيات الحضور**: معدل الحضور، عدد الرحلات، الغيابات
+
+### 3. 🚗 إدارة المركبات (Vehicle Management)
+
+- **تكامل مع Fleet**: ربط مع موديل Fleet في Odoo
+- **معلومات مخصصة**: عدد المقاعد، السائق الافتراضي
+- **تتبع المركبات**: لوحة أرقام، الشركة، الملاحظات
+
+### 4. 📍 إدارة نقاط التجمع (Stop Management)
+
+- **أنواع النقاط**: Pickup (صعود)، Dropoff (نزول)، Both (كلاهما)
+- **إحداثيات GPS**: دعم كامل للإحداثيات الجغرافية
+- **العناوين**: تفاصيل العنوان الكاملة
+- **إحصائيات الاستخدام**: عدد المرات المستخدمة
+
+### 5. 🔔 الإشعارات الذكية (Smart Notifications)
+
+- **قنوات متعددة**: SMS، WhatsApp، Email، Push
+- **إشعارات تلقائية**:
+  - إشعار الاقتراب (Approaching)
+  - إشعار الوصول (Arrived)
+  - إشعار بدء الرحلة
+  - إشعار الإلغاء
+- **قوالب قابلة للتخصيص**: رسائل مخصصة لكل نوع إشعار
+- **تتبع التسليم**: حالة كل إشعار (Pending → Sent → Delivered → Failed)
+
+### 6. 📊 التقارير والتحليلات
+
+- **تقارير الرحلات**: قوائم الركاب، الحضور، الغياب
+- **التقارير اليومية**: ملخص يومي للمديرين
+- **معدل الإشغال**: تتبع استخدام المقاعد
+- **سجل الإشعارات**: جميع الإشعارات المرسلة
+
+### 7. 🔐 الأمان والصلاحيات
+
+نظام صلاحيات من 4 مستويات:
+
+- **User (مستخدم)**: عرض الرحلات الخاصة به
+- **Driver (سائق)**: إدارة الرحلات المخصصة، تحديث حالة الركاب
+- **Dispatcher (مشغّل)**: إنشاء وإدارة جميع الرحلات
+- **Manager (مدير)**: وصول كامل بما في ذلك الإعدادات والحذف
+
+---
+
+## 📦 المتطلبات والتثبيت
+
+### المتطلبات الأساسية
+
+- **Odoo**: الإصدار 18.0 أو أحدث
+- **Python**: 3.10 أو أحدث
+- **قاعدة البيانات**: PostgreSQL
+
+### التبعيات
+
+الموديل يعتمد على:
+- `base` - الأساسيات
+- `mail` - البريد والإشعارات
+- `contacts` - إدارة جهات الاتصال
+- `partner_autocomplete` - إكمال تلقائي للشركاء
+- `fleet` - إدارة الأسطول
+
+### خطوات التثبيت
+
+#### 1. إعداد مجلد الموديل
+
+```bash
+# تأكد من أن اسم المجلد هو shuttlebee (بأحرف صغيرة)
+cd /opt/odoo18/custom_models
+# إذا كان المجلد باسم ShuttleBee، قم بإعادة تسميته:
+mv ShuttleBee shuttlebee
+```
+
+#### 2. تثبيت التبعيات
+
+```bash
+# تثبيت partner_autocomplete أولاً
+sudo -u odoo18 /opt/odoo18/venv/bin/python3 /opt/odoo18/odoo/odoo-bin \
+  -c /etc/odoo18.conf \
+  -d your_database \
+  -i partner_autocomplete \
+  --stop-after-init
+
+# تثبيت fleet (إذا لم يكن مثبتاً)
+sudo -u odoo18 /opt/odoo18/venv/bin/python3 /opt/odoo18/odoo/odoo-bin \
+  -c /etc/odoo18.conf \
+  -d your_database \
+  -i fleet \
+  --stop-after-init
+```
+
+#### 3. تحديث قائمة الموديلات
+
+```bash
+sudo -u odoo18 /opt/odoo18/venv/bin/python3 /opt/odoo18/odoo/odoo-bin \
+  -c /etc/odoo18.conf \
+  -d your_database \
+  -u base \
+  --stop-after-init
+```
+
+#### 4. تثبيت ShuttleBee
+
+**من واجهة Odoo:**
+1. اذهب إلى **Apps**
+2. ابحث عن **ShuttleBee - Shuttle Management**
+3. اضغط **Install**
+
+**أو من سطر الأوامر:**
+```bash
+sudo -u odoo18 /opt/odoo18/venv/bin/python3 /opt/odoo18/odoo/odoo-bin \
+  -c /etc/odoo18.conf \
+  -d your_database \
+  -i shuttlebee \
+  --stop-after-init
+```
+
+#### 5. إعادة تشغيل Odoo
+
+```bash
+sudo systemctl restart odoo18
+```
+
+---
+
+## ⚙️ الإعداد الأولي
+
+### 1. إنشاء نقاط التجمع (Stops)
+
+**الخطوات:**
+1. اذهب إلى **Configuration → Stops**
+2. اضغط **Create**
+3. املأ المعلومات:
+   - **Stop Name**: اسم النقطة (مثلاً: "محطة المدرسة الرئيسية")
+   - **Stop Type**: Pickup / Dropoff / Both
+   - **Address**: العنوان الكامل
+   - **GPS Coordinates**: الإحداثيات (اختياري)
+4. احفظ
+
+**مثال:**
+```
+Stop Name: محطة المدرسة
+Stop Type: Both
+City: الدار البيضاء
+Latitude: 33.5731
+Longitude: -7.5898
+```
+
+### 2. تسجيل الركاب (Passengers)
+
+**الخطوات:**
+1. اذهب إلى **Operations → Passengers**
+2. اضغط **Create**
+3. املأ المعلومات:
+   - **Name**: اسم الراكب
+   - **Is Shuttle Passenger**: ✓
+   - **Default Pickup Stop**: نقطة الصعود الافتراضية
+   - **Default Dropoff Stop**: نقطة النزول الافتراضية
+   - **GPS Coordinates**: إذا لم يكن له Stop ثابت
+4. احفظ
+
+**ملاحظة**: يمكن للراكب أن يكون له:
+- **Stop ثابت**: يتم تعيينه في Default Pickup/Dropoff Stop
+- **إحداثيات GPS**: يتم إدخالها في Shuttle Information → GPS Coordinates
+- **مزيج**: يمكن خلط الركاب (بعضهم بـ Stop، وبعضهم بإحداثيات) في نفس المجموعة
+
+### 3. إنشاء مركبة (Vehicle)
+
+**الخطوات:**
+1. أولاً، أنشئ مركبة في **Fleet → Vehicles**
+2. اذهب إلى **Configuration → Vehicles**
+3. اضغط **Create**
+4. املأ المعلومات:
+   - **Vehicle Name**: اسم المركبة
+   - **Fleet Vehicle**: اختر المركبة من Fleet
+   - **Seat Capacity**: عدد المقاعد
+   - **Default Driver**: السائق الافتراضي
+5. احفظ
+
+### 4. إنشاء مجموعة ركاب (Passenger Group)
+
+**الخطوات:**
+1. اذهب إلى **Operations → Passenger Groups**
+2. اضغط **Create**
+3. املأ المعلومات:
+   - **Group Name**: اسم المجموعة (مثلاً: "مسار المدرسة - الصباح")
+   - **Trip Type**: Pickup / Dropoff / Both
+   - **Destination Stop**: نقطة الوجهة المشتركة (مثل المدرسة) - **مهم**: سيتم استخدامها تلقائياً للركاب بدون Stop محدد
+   - **Default Driver**: السائق الافتراضي
+   - **Vehicle**: المركبة الافتراضية
+   - **Seat Capacity**: عدد المقاعد
+4. في تبويب **Passengers**، أضف الركاب:
+   - اضغط **Add a line**
+   - اختر **Passenger**
+   - **استخدام زر "Suggest Nearest"**: إذا كان للراكب إحداثيات GPS، اضغط الزر بجانب Pickup/Dropoff Stop لاقتراح أقرب Stop تلقائياً
+   - اختر **Pickup Stop** (أو اتركه فارغاً إذا كان له إحداثيات أو سيستخدم Destination Stop)
+   - اختر **Dropoff Stop** (اختياري - سيستخدم Destination Stop تلقائياً في رحلة Pickup)
+   - **Seats**: عدد المقاعد المطلوبة
+5. احفظ
+
+**مثال:**
+```
+Group Name: مسار المدرسة - الصباح
+Trip Type: Pickup
+Destination Stop: المدرسة الرئيسية (Both)
+Default Driver: أحمد محمد
+Vehicle: حافلة 01
+Seat Capacity: 20
+Passengers:
+  - محمد علي → Pickup Stop: محطة المدرسة (Dropoff: المدرسة تلقائياً)
+  - فاطمة أحمد → GPS: (33.5731, -7.5898) (Dropoff: المدرسة تلقائياً)
+  - خالد حسن → Pickup Stop: محطة المدرسة (Dropoff: المدرسة تلقائياً)
+```
+
+**ملاحظات مهمة:**
+- **Destination Stop**: عند إنشاء رحلة Pickup، سيتم استخدام Destination Stop كـ Dropoff Stop تلقائياً للركاب الذين ليس لديهم Dropoff Stop محدد
+- عند إنشاء رحلة Dropoff، سيتم استخدام Destination Stop كـ Pickup Stop تلقائياً
+- **زر Suggest Nearest**: يظهر فقط للركاب الذين لديهم إحداثيات GPS، ويحسب المسافة ويقترح أقرب Stop
+
+### 5. إعداد الإشعارات
+
+**الخطوات:**
+1. اذهب إلى **Configuration → Settings → ShuttleBee**
+2. املأ الإعدادات:
+   - **Default Notification Channel**: SMS / WhatsApp / Email
+   - **Approaching Minutes**: عدد الدقائق قبل الوصول لإرسال الإشعار
+   - **Absent Timeout**: عدد الدقائق بعد بدء الرحلة لاعتبار الراكب غائباً
+   - **Message Templates**: قوالب الرسائل (يمكن تخصيصها)
+
+---
+
+## 🚀 الاستخدام العملي
+
+### سيناريو 1: إنشاء رحلة يومية من مجموعة
+
+**الخطوات:**
+1. اذهب إلى **Operations → Passenger Groups**
+2. اختر المجموعة المطلوبة
+3. اضغط **Generate Trip**
+4. املأ المعلومات:
+   - **Trip Date**: تاريخ الرحلة
+   - **Create Pickup Trip**: ✓ (لرحلة الصباح)
+   - **Pickup Start Time**: وقت بدء الرحلة الصباحية
+   - **Create Dropoff Trip**: ✓ (لرحلة المساء)
+   - **Dropoff Start Time**: وقت بدء الرحلة المسائية
+5. اضغط **Generate Trips**
+
+**النتيجة:**
+- يتم إنشاء رحلتين: واحدة للصباح وأخرى للمساء
+- يتم تعبئة الركاب تلقائياً من المجموعة
+- يتم تعيين السائق والمركبة من الإعدادات الافتراضية
+
+### سيناريو 2: إنشاء رحلة يدوياً
+
+**الخطوات:**
+1. اذهب إلى **Operations → Trips**
+2. اضغط **Create**
+3. املأ المعلومات:
+   - **Trip Type**: Pickup / Dropoff
+   - **Date**: تاريخ الرحلة
+   - **Passenger Group**: **إلزامي** - اختر المجموعة
+   - **Driver**: يتم تعبئته تلقائياً من المجموعة
+   - **Vehicle**: يتم تعبئته تلقائياً من المجموعة
+   - **Planned Start Time**: وقت البدء المخطط
+   - **Planned Arrival Time**: وقت الوصول المخطط
+4. في تبويب **Passengers**: يتم تعبئة الركاب تلقائياً من المجموعة
+5. اضغط **Confirm Trip** لتغيير الحالة إلى Planned
+
+**ملاحظة مهمة**: لا يمكن إضافة ركاب يدوياً. يجب أن يكونوا في Passenger Group المرتبط بالرحلة.
+
+### سيناريو 3: إدارة الرحلة (من قبل السائق)
+
+**الخطوات:**
+1. اذهب إلى **Operations → Trips**
+2. اختر الرحلة المطلوبة
+3. اضغط **Start Trip** عند بدء الرحلة
+4. في تبويب **Passengers**:
+   - اضغط **Send Approaching Notification** لإرسال إشعار الاقتراب
+   - اضغط **Send Arrived Notification** عند الوصول
+   - اضغط **Mark Boarded** عند صعود الراكب
+   - اضغط **Mark Absent** إذا لم يحضر الراكب
+5. عند الانتهاء، اضغط **Complete Trip**
+
+### سيناريو 4: استخدام إحداثيات GPS واقتراح أقرب Stop
+
+**الحالة**: راكب صغير لا يمكنه الذهاب إلى Stop ثابت
+
+**الخطوات:**
+1. اذهب إلى **Operations → Passengers**
+2. اختر الراكب
+3. في تبويب **Shuttle Information**:
+   - اترك **Default Pickup Stop** فارغاً
+   - أدخل **Latitude** و **Longitude**
+4. عند إضافة الراكب لمجموعة:
+   - افتح الراكب في form view (اضغط على السطر في قائمة الركاب)
+   - بجانب **Pickup Stop**، اضغط زر **"Suggest Nearest"** (يظهر فقط إذا كان للراكب إحداثيات)
+   - سيتم حساب المسافة واقتراح أقرب Stop تلقائياً مع عرض المسافة بالكيلومترات
+   - يمكنك الموافقة على الاقتراح أو اختيار Stop آخر
+5. عند إنشاء الرحلة:
+   - إذا كان للراكب Stop: سيتم استخدامه
+   - إذا لم يكن له Stop: سيتم استخدام الإحداثيات تلقائياً
+   - إذا لم يكن له Stop ولا إحداثيات: سيتم استخدام Destination Stop من المجموعة
+
+### سيناريو 5: استخدام Destination Stop (المدرسة/العمل)
+
+**الحالة**: جميع الركاب يذهبون لنفس الوجهة (مثل المدرسة)
+
+**الخطوات:**
+1. أنشئ Stop للمدرسة من نوع "Both" (Pickup & Dropoff)
+2. في Passenger Group:
+   - اختر **Destination Stop** = المدرسة
+3. عند إضافة الركاب:
+   - للركاب في رحلة Pickup: حدد فقط **Pickup Stop** (منزلهم)
+   - **Dropoff Stop** سيتم تعيينه تلقائياً = المدرسة (من Destination Stop)
+4. عند إنشاء الرحلة:
+   - **رحلة Pickup**: من المنازل → المدرسة (تلقائياً)
+   - **رحلة Dropoff**: من المدرسة → المنازل (تلقائياً)
+
+**مثال عملي:**
+```
+Passenger Group:
+  - Destination Stop: المدرسة الرئيسية
+  - Passengers:
+    - محمد → Pickup: منزله (Dropoff: المدرسة تلقائياً)
+    - فاطمة → Pickup: منزلها (Dropoff: المدرسة تلقائياً)
+    - خالد → Pickup: GPS (Dropoff: المدرسة تلقائياً)
+
+عند إنشاء رحلة Pickup:
+  - جميع الركاب: Pickup من منازلهم/GPS → Dropoff في المدرسة (تلقائياً)
+```
+
+---
+
+## 🔄 المهام المجدولة (Cron Jobs)
+
+الموديل يحتوي على 3 مهام مجدولة:
+
+### 1. إرسال إشعارات الاقتراب
+- **التكرار**: كل 5 دقائق
+- **الوظيفة**: إرسال إشعارات للركاب عند اقتراب السائق
+- **الإعداد**: يمكن تعديل عدد الدقائق من Settings
+
+### 2. تحديد الركاب الغائبين
+- **التكرار**: كل 10 دقائق
+- **الوظيفة**: تحديد الركاب كغائبين بعد انتهاء الوقت المحدد
+- **الإعداد**: يمكن تعديل الوقت من Settings
+
+### 3. الملخص اليومي
+- **التكرار**: مرة واحدة يومياً
+- **الوظيفة**: إرسال ملخص يومي للمديرين
+- **المحتوى**: عدد الرحلات، الركاب، الحضور، الغياب
+
+---
+
+## 🏗️ البنية التقنية
+
+### النماذج الرئيسية (Models)
+
+#### 1. `shuttle.passenger.group`
+**الوصف**: قالب المجموعة (Template)
+- **الحقول الرئيسية**: name, driver_id, vehicle_id, total_seats, trip_type, destination_stop_id
+- **العلاقات**: line_ids (One2many إلى shuttle.passenger.group.line)
+- **الوظائف**: 
+  - `_prepare_trip_line_values()`: تحضير قيم الركاب للرحلة مع استخدام Destination Stop تلقائياً
+  - `action_open_generate_trip_wizard()`: فتح ويزارد إنشاء الرحلات
+
+#### 2. `shuttle.passenger.group.line`
+**الوصف**: راكب في المجموعة
+- **الحقول الرئيسية**: passenger_id, pickup_stop_id, dropoff_stop_id, seat_count
+- **العلاقات**: group_id (Many2one إلى shuttle.passenger.group)
+- **الوظائف**:
+  - `_calculate_distance()`: حساب المسافة بين إحداثيات GPS باستخدام Haversine formula
+  - `action_suggest_nearest_stop()`: اقتراح أقرب Stop بناءً على إحداثيات الراكب
+
+#### 3. `shuttle.trip`
+**الوصف**: رحلة فعلية
+- **الحقول الرئيسية**: name, date, trip_type, driver_id, vehicle_id, group_id (إلزامي)
+- **الحالات**: draft, planned, ongoing, done, cancelled
+- **العلاقات**: 
+  - group_id (Many2one إلى shuttle.passenger.group) - **إلزامي**
+  - line_ids (One2many إلى shuttle.trip.line)
+
+#### 4. `shuttle.trip.line`
+**الوصف**: راكب في رحلة
+- **الحقول الرئيسية**: passenger_id, pickup_stop_id, dropoff_stop_id, status
+- **الإحداثيات**: pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude
+- **العلاقات**: 
+  - trip_id (Many2one إلى shuttle.trip)
+  - group_line_id (Many2one إلى shuttle.passenger.group.line)
+
+#### 5. `shuttle.vehicle`
+**الوصف**: مركبة مخصصة للنقل
+- **الحقول الرئيسية**: name, fleet_vehicle_id, seat_capacity, driver_id
+- **العلاقات**: fleet_vehicle_id (Many2one إلى fleet.vehicle)
+
+#### 6. `shuttle.stop`
+**الوصف**: نقطة تجمع
+- **الحقول الرئيسية**: name, stop_type, latitude, longitude, address
+
+#### 7. `shuttle.notification`
+**الوصف**: سجل الإشعارات
+- **الحقول الرئيسية**: notification_type, channel, status, message_content
+
+### الويزارد (Wizard)
+
+#### `shuttle.trip.wizard`
+**الوصف**: مولد الرحلات من المجموعات
+- **الوظيفة**: إنشاء رحلة أو رحلتين (صباح/مساء) من مجموعة
+- **المدخلات**: group_id, trip_date, times, driver, vehicle
+- **المخرجات**: رحلة أو رحلتين مع الركاب المملوءين تلقائياً
+
+---
+
+## 🔧 التطوير والتخصيص
+
+### إضافة قناة إشعارات جديدة
+
+```python
+# في models/shuttle_notification.py
+class ShuttleNotification(models.Model):
+    _inherit = 'shuttle.notification'
+    
+    def _send_custom_channel(self):
+        """إرسال عبر قناة مخصصة"""
+        # كودك هنا
+        pass
+```
+
+### تخصيص تقرير
+
+```xml
+<!-- في report/shuttle_report_templates.xml -->
+<template id="custom_trip_report">
+    <t t-call="web.html_container">
+        <!-- محتوى التقرير -->
+    </t>
+</template>
+```
+
+### إضافة حالة جديدة للرحلة
+
+```python
+# في models/shuttle_trip.py
+class ShuttleTrip(models.Model):
+    _inherit = 'shuttle.trip'
+    
+    state = fields.Selection(selection_add=[
+        ('custom_state', 'Custom State')
+    ])
+    
+    def action_custom_state(self):
+        self.write({'state': 'custom_state'})
+```
+
+---
+
+## 🐛 استكشاف الأخطاء
+
+### المشكلة: لا يمكن إنشاء الويزارد
+
+**السبب**: مشكلة في الصلاحيات
+**الحل**: 
+1. اذهب إلى **Settings → Technical → Security → Access Rights**
+2. ابحث عن `shuttle.trip.wizard`
+3. تأكد من أن المستخدم لديه صلاحيات Create
+
+### المشكلة: الركاب لا يظهرون في الرحلة
+
+**السبب**: لم يتم اختيار Passenger Group
+**الحل**: 
+1. تأكد من اختيار **Passenger Group** في الرحلة (حقل إلزامي)
+2. تأكد من أن المجموعة تحتوي على ركاب
+3. بعد اختيار المجموعة، سيتم تعبئة الركاب تلقائياً
+
+### المشكلة: لا يمكن إضافة راكب يدوياً
+
+**السبب**: هذا سلوك مقصود
+**الحل**: 
+- يجب إضافة الركاب إلى **Passenger Group** أولاً
+- ثم إنشاء الرحلة من المجموعة
+- الركاب سيتم تعبئتهم تلقائياً
+
+### المشكلة: الإشعارات لا تُرسل
+
+**السبب**: مشكلة في الإعدادات أو API
+**الحل**:
+1. تحقق من **Settings → ShuttleBee**
+2. تأكد من صحة API credentials
+3. تحقق من **Notifications** log للأخطاء
+4. تأكد من أن الراكب لديه رقم هاتف/بريد إلكتروني
+
+### المشكلة: Cron jobs لا تعمل
+
+**السبب**: المهام المجدولة غير نشطة
+**الحل**:
+1. اذهب إلى **Settings → Technical → Automation → Scheduled Actions**
+2. ابحث عن مهام ShuttleBee
+3. تأكد من أنها **Active**
+4. تحقق من إعدادات Odoo server (`--max-cron-threads`)
+
+---
+
+## ❓ الأسئلة الشائعة (FAQ)
+
+### Q: ما الفرق بين Passenger Group و Shuttle Trip؟
+
+**A**: 
+- **Passenger Group**: قالب ثابت يحتوي على الركاب والإعدادات الافتراضية
+- **Shuttle Trip**: رحلة فعلية بتاريخ وساعة محددة، مرتبطة بمجموعة
+
+### Q: هل يمكن إضافة راكب يدوياً في الرحلة؟
+
+**A**: نعم، ولكن بشرط أن يكون الراكب موجوداً في نفس Passenger Group المرتبط بالرحلة. سيتم تعيين `group_line_id` تلقائياً عند إضافة الراكب.
+
+### Q: كيف أستخدم إحداثيات GPS للركاب؟
+
+**A**: 
+1. اذهب إلى Passenger → Shuttle Information
+2. اترك Default Pickup Stop فارغاً
+3. أدخل Latitude و Longitude
+4. عند إضافة الراكب لمجموعة:
+   - يمكنك استخدام زر "Suggest Nearest" لاقتراح أقرب Stop تلقائياً
+   - أو اترك Stop فارغاً لاستخدام الإحداثيات مباشرة
+5. عند إنشاء الرحلة، سيتم استخدام الإحداثيات تلقائياً إذا لم يكن هناك Stop
+
+### Q: ما هو Destination Stop؟
+
+**A**: 
+- Destination Stop هو نقطة الوجهة المشتركة لجميع الركاب (مثل المدرسة أو العمل)
+- في رحلة Pickup: يتم استخدامه كـ Dropoff Stop تلقائياً للركاب بدون Dropoff Stop محدد
+- في رحلة Dropoff: يتم استخدامه كـ Pickup Stop تلقائياً للركاب بدون Pickup Stop محدد
+- يوفر الوقت ويسهل الإدارة عند وجود وجهة مشتركة
+
+### Q: كيف يعمل زر "Suggest Nearest Stop"؟
+
+**A**: 
+- يحسب المسافة بين إحداثيات GPS للراكب وكل Stop نشط
+- يقترح أقرب Stop بناءً على المسافة (باستخدام Haversine formula)
+- يعرض المسافة بالكيلومترات
+- يظهر فقط للركاب الذين لديهم إحداثيات GPS
+- يمكنك الموافقة على الاقتراح أو اختيار Stop آخر
+
+### Q: هل يمكن خلط الركاب (بعضهم بـ Stop، وبعضهم بإحداثيات)؟
+
+**A**: نعم. النظام مرن ويدعم هذا.
+
+### Q: كيف أنشئ رحلة صباحية ومسائية من نفس المجموعة؟
+
+**A**: استخدم **Generate Trip** من Passenger Group، واختر Create Pickup Trip و Create Dropoff Trip.
+
+### Q: كيف أغير حالة الرحلة؟
+
+**A**: 
+- **Draft**: الحالة الافتراضية
+- **Planned**: اضغط Confirm Trip
+- **Ongoing**: اضغط Start Trip
+- **Done**: اضغط Complete Trip
+- **Cancelled**: اضغط Cancel
+
+---
+
+## 📚 الموارد الإضافية
+
+### الوثائق
+- [Odoo 18 Documentation](https://www.odoo.com/documentation/18.0/)
+- [Odoo Development Documentation](https://www.odoo.com/documentation/18.0/developer.html)
+
+### الدعم
+- **البريد الإلكتروني**: support@yourcompany.com
+- **الموقع**: https://www.yourcompany.com
+- **الوثائق**: https://docs.yourcompany.com/shuttlebee
+
+---
+
+## 📝 معلومات الإصدار
+
+- **الإصدار**: 18.0.1.0.0
+- **التاريخ**: 2025
+- **الحالة**: Production Ready
+- **الترخيص**: LGPL-3
+- **المطور**: Your Company
+
+---
+
+## 🎯 خارطة الطريق (Roadmap)
+
+الميزات المخطط لها:
+
+- [ ] تطبيق موبايل للسائقين (React Native)
+- [ ] تتبع GPS في الوقت الفعلي
+- [ ] خوارزميات تحسين المسارات
+- [ ] بوابة الركاب للخدمة الذاتية
+- [ ] تكامل الدفع
+- [ ] لوحة تحليلات متقدمة
+- [ ] تكامل الطقس
+- [ ] تنبيهات المرور
+
+---
+
+## 📄 الترخيص
+
+هذا المشروع مرخص تحت **LGPL-3 License**.
+
+---
+
+**تم التطوير بـ ❤️ لتحسين إدارة خدمات النقل**

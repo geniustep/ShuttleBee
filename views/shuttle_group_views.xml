@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Passenger Group Tree -->
+    <record id="view_shuttle_group_tree" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.tree</field>
+        <field name="model">shuttle.passenger.group</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list string="Passenger Groups" sample="1" decoration-muted="not active">
+                <field name="name"/>
+                <field name="trip_type" widget="badge"/>
+                <field name="driver_id"/>
+                <field name="vehicle_id"/>
+                <field name="member_count"/>
+                <field name="total_seats"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Passenger Group Form -->
+    <record id="view_shuttle_group_form" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.form</field>
+        <field name="model">shuttle.passenger.group</field>
+        <field name="arch" type="xml">
+            <form string="Passenger Group">
+                <header>
+                    <button name="action_open_generate_trip_wizard"
+                            type="object"
+                            class="oe_highlight"
+                            string="Generate Trip"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_related_trips"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-bus">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Trips</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                        <field name="code" class="oe_inline"/>
+                    </div>
+                    <group>
+                        <group string="Route Details">
+                            <field name="trip_type"/>
+                            <field name="destination_stop_id"
+                                   help="Common destination (e.g., School, Office). Will be used automatically for passengers without a specific stop."/>
+                            <field name="driver_id"/>
+                            <field name="vehicle_id"/>
+                            <field name="total_seats"/>
+                        </group>
+                        <group string="Additional Information">
+                            <field name="member_count" readonly="1"/>
+                            <field name="color"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes" placeholder="Notes or requirements for this passenger group..."/>
+                    </group>
+                    <notebook>
+                        <page string="Passengers">
+                            <field name="line_ids" context="{'default_group_id': id}" mode="list,form" editable="bottom">
+                                <list string="Passengers" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="passenger_id"/>
+                                    <field name="pickup_stop_id"/>
+                                    <field name="dropoff_stop_id"/>
+                                    <field name="seat_count"/>
+                                    <field name="notes"/>
+                                </list>
+                                <form string="Passenger Line">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="passenger_id"/>
+                                                <field name="seat_count"/>
+                                            </group>
+                                            <group>
+                                                <field name="pickup_stop_id">
+                                                    <button name="action_suggest_nearest_stop" 
+                                                            type="object" 
+                                                            string="Suggest Nearest"
+                                                            context="{'stop_type': 'pickup'}"
+                                                            icon="fa-map-marker"
+                                                            title="Suggest nearest pickup stop based on passenger GPS coordinates"
+                                                            invisible="not passenger_id or not passenger_id.shuttle_latitude"/>
+                                                </field>
+                                                <field name="dropoff_stop_id">
+                                                    <button name="action_suggest_nearest_stop" 
+                                                            type="object" 
+                                                            string="Suggest Nearest"
+                                                            context="{'stop_type': 'dropoff'}"
+                                                            icon="fa-map-marker"
+                                                            title="Suggest nearest dropoff stop based on passenger GPS coordinates"
+                                                            invisible="not passenger_id or not passenger_id.shuttle_latitude"/>
+                                                </field>
+                                            </group>
+                                        </group>
+                                        <group>
+                                            <field name="notes" placeholder="Notes / Requirements..."/>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_shuttle_passenger_group" model="ir.actions.act_window">
+        <field name="name">Passenger Groups</field>
+        <field name="res_model">shuttle.passenger.group</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_trip_type': 'both'}</field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_shuttle_groups"
+              name="Passenger Groups"
+              parent="menu_shuttle_operations"
+              action="action_shuttle_passenger_group"
+              sequence="30"/>
+
+</odoo>
+

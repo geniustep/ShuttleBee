@@ -47,12 +47,12 @@ class ResConfigSettings(models.TransientModel):
     )
 
     # Message Templates
-    shuttlebee_template_approaching = fields.Text(
+    shuttlebee_template_approaching = fields.Char(
         string='Approaching Message Template',
         config_parameter='shuttlebee.template_approaching',
         default='مرحباً {passenger_name}، السائق {driver_name} يقترب من نقطة التجمع {stop_name}. الوصول المتوقع: {eta} دقائق.'
     )
-    shuttlebee_template_arrived = fields.Text(
+    shuttlebee_template_arrived = fields.Char(
         string='Arrived Message Template',
         config_parameter='shuttlebee.template_arrived',
         default='السائق {driver_name} وصل إلى {stop_name}. يرجى التوجه للحافلة.'

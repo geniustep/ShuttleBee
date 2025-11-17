@@ -36,6 +36,8 @@ Perfect for:
         'base',
         'mail',
         'contacts',
+        'partner_autocomplete',
+        'fleet',
     ],
     'data': [
         # Security
@@ -51,9 +53,12 @@ Perfect for:
         'views/shuttle_trip_views.xml',
         'views/shuttle_trip_line_views.xml',
         'views/shuttle_stop_views.xml',
+        'views/shuttle_group_views.xml',
+        'views/shuttle_vehicle_views.xml',
         'views/res_partner_views.xml',
         'views/shuttle_notification_views.xml',
         'views/res_config_settings_views.xml',
+        'views/shuttle_trip_wizard_views.xml',
         'views/shuttle_menus.xml',
 
         # Reports

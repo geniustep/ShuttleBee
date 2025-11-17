@@ -47,6 +47,20 @@
                             <field name="dropoff_stop_id"/>
                             <field name="sequence"/>
                         </group>
+                        <group string="GPS Coordinates (if no stop)">
+                            <field name="pickup_latitude"
+                                   invisible="pickup_stop_id"
+                                   help="GPS latitude for custom pickup location"/>
+                            <field name="pickup_longitude"
+                                   invisible="pickup_stop_id"
+                                   help="GPS longitude for custom pickup location"/>
+                            <field name="dropoff_latitude"
+                                   invisible="dropoff_stop_id"
+                                   help="GPS latitude for custom dropoff location"/>
+                            <field name="dropoff_longitude"
+                                   invisible="dropoff_stop_id"
+                                   help="GPS longitude for custom dropoff location"/>
+                        </group>
                     </group>
                     <group string="Notifications">
                         <field name="approaching_notified"/>

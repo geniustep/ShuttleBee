@@ -91,6 +91,10 @@
                         <group name="trip_info" string="Trip Information">
                             <field name="trip_type" widget="radio"/>
                             <field name="date"/>
+                            <field name="group_id"
+                                   options="{'no_create': True}"
+                                   context="{'default_trip_type': trip_type}"
+                                   required="1"/>
                             <field name="driver_id"
                                    options="{'no_create': True, 'no_open': True}"/>
                             <field name="vehicle_id"
@@ -131,13 +135,25 @@
                             <field name="line_ids"
                                    widget="one2many"
                                    mode="list,kanban"
-                                   context="{'default_trip_id': id, 'default_trip_type': trip_type}">
+                                   context="{'default_trip_id': id, 'default_trip_type': trip_type, 'default_group_id': group_id}">
                                 <list string="Passengers" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="passenger_id"
                                            options="{'no_create': True}"/>
                                     <field name="pickup_stop_id"/>
+                                    <field name="pickup_latitude"
+                                           invisible="pickup_stop_id"
+                                           optional="hide"/>
+                                    <field name="pickup_longitude"
+                                           invisible="pickup_stop_id"
+                                           optional="hide"/>
                                     <field name="dropoff_stop_id"
+                                           optional="hide"/>
+                                    <field name="dropoff_latitude"
+                                           invisible="dropoff_stop_id"
+                                           optional="hide"/>
+                                    <field name="dropoff_longitude"
+                                           invisible="dropoff_stop_id"
                                            optional="hide"/>
                                     <field name="seat_count"/>
                                     <field name="status" widget="badge"/>
@@ -192,11 +208,7 @@
                         </page>
                     </notebook>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="activity_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -287,9 +299,6 @@
                 <separator/>
                 <filter string="Today" name="today"
                         domain="[('date', '=', context_today())]"/>
-                <filter string="This Week" name="this_week"
-                        domain="[('date', '&gt;=', (context_today()-datetime.timedelta(days=context_today().weekday())).strftime('%Y-%m-%d')),
-                                 ('date', '&lt;=', (context_today()+datetime.timedelta(days=6-context_today().weekday())).strftime('%Y-%m-%d'))]"/>
                 <filter string="This Month" name="this_month"
                         domain="[('date', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
@@ -325,7 +334,7 @@
         <field name="name">Shuttle Trips</field>
         <field name="res_model">shuttle.trip</field>
         <field name="view_mode">list,kanban,form,calendar</field>
-        <field name="context">{'search_default_this_week': 1}</field>
+        <field name="context">{'search_default_today': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first shuttle trip!

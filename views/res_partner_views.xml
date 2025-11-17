@@ -27,6 +27,12 @@
                             <field name="default_pickup_stop_id"/>
                             <field name="default_dropoff_stop_id"/>
                         </group>
+                        <group string="GPS Coordinates">
+                            <field name="shuttle_latitude"
+                                   help="GPS latitude for custom pickup location (if no stop assigned)"/>
+                            <field name="shuttle_longitude"
+                                   help="GPS longitude for custom pickup location (if no stop assigned)"/>
+                        </group>
                         <group string="Statistics">
                             <field name="total_trips"/>
                             <field name="present_trips"/>

@@ -59,6 +59,18 @@ class ResPartner(models.Model):
         help='Special requirements or notes for transportation'
     )
 
+    # GPS Coordinates (for passengers without assigned stops)
+    shuttle_latitude = fields.Float(
+        string='Latitude',
+        digits=(10, 7),
+        help='GPS latitude for custom pickup location'
+    )
+    shuttle_longitude = fields.Float(
+        string='Longitude',
+        digits=(10, 7),
+        help='GPS longitude for custom pickup location'
+    )
+
     # Computed Methods
     @api.depends('shuttle_trip_line_ids.status')
     def _compute_shuttle_stats(self):
