@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_shuttle_trip_line_list" model="ir.ui.view">
+        <field name="name">shuttle.trip.line.list</field>
+        <field name="model">shuttle.trip.line</field>
+        <field name="arch" type="xml">
+            <list string="Passenger Lines">
+                <field name="trip_id"/>
+                <field name="passenger_id"/>
+                <field name="pickup_stop_id"/>
+                <field name="dropoff_stop_id" optional="hide"/>
+                <field name="seat_count"/>
+                <field name="status" widget="badge"/>
+                <field name="trip_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_shuttle_trip_line_form" model="ir.ui.view">
+        <field name="name">shuttle.trip.line.form</field>
+        <field name="model">shuttle.trip.line</field>
+        <field name="arch" type="xml">
+            <form string="Passenger Line">
+                <header>
+                    <button name="action_mark_boarded" string="Mark Boarded"
+                            type="object" class="oe_highlight"
+                            invisible="status in ['boarded', 'absent', 'dropped']"/>
+                    <button name="action_mark_absent" string="Mark Absent"
+                            type="object"
+                            invisible="status in ['absent', 'dropped']"/>
+                    <button name="action_mark_dropped" string="Mark Dropped"
+                            type="object"
+                            invisible="status != 'boarded'"/>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="trip_id"/>
+                            <field name="passenger_id"/>
+                            <field name="seat_count"/>
+                        </group>
+                        <group>
+                            <field name="pickup_stop_id"/>
+                            <field name="dropoff_stop_id"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <group string="Notifications">
+                        <field name="approaching_notified"/>
+                        <field name="arrived_notified"/>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" placeholder="Additional notes..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_shuttle_trip_line" model="ir.actions.act_window">
+        <field name="name">Passenger Lines</field>
+        <field name="res_model">shuttle.trip.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

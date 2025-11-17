@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Approaching Notification Template -->
+        <record id="mail_template_approaching" model="mail.template">
+            <field name="name">ShuttleBee: Approaching Notification</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="subject">🚌 السائق يقترب من نقطة التجمع</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; direction: rtl;">
+                    <h3>مرحباً ${object.passenger_id.name},</h3>
+                    <p>
+                        السائق <strong>${object.driver_id.name}</strong>
+                        يقترب من نقطة التجمع <strong>${object.pickup_stop_id.name}</strong>
+                    </p>
+                    <p>
+                        الوصول المتوقع: <strong>10 دقائق</strong>
+                    </p>
+                    <p>يرجى التواجد في نقطة التجمع.</p>
+                    <p>شكراً لاستخدام خدمة ShuttleBee 🐝</p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Arrived Notification Template -->
+        <record id="mail_template_arrived" model="mail.template">
+            <field name="name">ShuttleBee: Arrived Notification</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="subject">✅ السائق وصل إلى نقطة التجمع</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; direction: rtl;">
+                    <h3>عزيزي ${object.passenger_id.name},</h3>
+                    <p>
+                        السائق <strong>${object.driver_id.name}</strong>
+                        وصل إلى <strong>${object.pickup_stop_id.name}</strong>
+                    </p>
+                    <p style="color: #d9534f;">
+                        <strong>يرجى التوجه للحافلة فوراً</strong>
+                    </p>
+                    <p>شكراً 🐝</p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Daily Summary Template -->
+        <record id="email_template_daily_summary" model="mail.template">
+            <field name="name">ShuttleBee: Daily Summary</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="subject">📊 ShuttleBee Daily Summary - ${context.get('today', '')}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif;">
+                    <h2>Daily Shuttle Summary</h2>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                <strong>Total Trips:</strong>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                ${context.get('total_trips', 0)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                <strong>Total Passengers:</strong>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                ${context.get('total_passengers', 0)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                <strong>Present:</strong>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd; color: green;">
+                                ${context.get('total_present', 0)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                <strong>Absent:</strong>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd; color: red;">
+                                ${context.get('total_absent', 0)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                <strong>Attendance Rate:</strong>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                ${context.get('attendance_rate', 0):.1f}%
+                            </td>
+                        </tr>
+                    </table>
+                    <p style="margin-top: 20px;">
+                        <a href="/web#action=shuttlebee.action_shuttle_trip"
+                           style="background: #5cb85c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                            View All Trips
+                        </a>
+                    </p>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>

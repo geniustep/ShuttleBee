@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu -->
+    <menuitem id="menu_shuttle_root"
+              name="ShuttleBee"
+              web_icon="shuttlebee,static/description/icon.png"
+              sequence="10"/>
+
+    <!-- Operations Menu -->
+    <menuitem id="menu_shuttle_operations"
+              name="Operations"
+              parent="menu_shuttle_root"
+              sequence="10"/>
+
+    <menuitem id="menu_shuttle_trips"
+              name="Trips"
+              parent="menu_shuttle_operations"
+              action="action_shuttle_trip"
+              sequence="10"/>
+
+    <menuitem id="menu_shuttle_passengers"
+              name="Passengers"
+              parent="menu_shuttle_operations"
+              action="action_shuttle_passengers"
+              sequence="20"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="menu_shuttle_configuration"
+              name="Configuration"
+              parent="menu_shuttle_root"
+              sequence="90"
+              groups="group_shuttle_manager"/>
+
+    <menuitem id="menu_shuttle_stops"
+              name="Stops"
+              parent="menu_shuttle_configuration"
+              action="action_shuttle_stop"
+              sequence="10"/>
+
+    <menuitem id="menu_shuttle_settings"
+              name="Settings"
+              parent="menu_shuttle_configuration"
+              action="base.action_res_config_settings"
+              sequence="99"/>
+
+    <!-- Reports Menu -->
+    <menuitem id="menu_shuttle_reports"
+              name="Reports"
+              parent="menu_shuttle_root"
+              sequence="50"
+              groups="group_shuttle_dispatcher"/>
+
+    <menuitem id="menu_shuttle_notifications"
+              name="Notification Log"
+              parent="menu_shuttle_reports"
+              action="action_shuttle_notification"
+              sequence="20"/>
+</odoo>

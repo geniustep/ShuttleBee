@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_shuttle_stop_list" model="ir.ui.view">
+        <field name="name">shuttle.stop.list</field>
+        <field name="model">shuttle.stop</field>
+        <field name="arch" type="xml">
+            <list string="Shuttle Stops" sample="1">
+                <field name="sequence" widget="handle"/>
+                <field name="code" optional="show"/>
+                <field name="name"/>
+                <field name="city"/>
+                <field name="stop_type" widget="badge"/>
+                <field name="latitude" optional="hide"/>
+                <field name="longitude" optional="hide"/>
+                <field name="usage_count" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_shuttle_stop_form" model="ir.ui.view">
+        <field name="name">shuttle.stop.form</field>
+        <field name="model">shuttle.stop</field>
+        <field name="arch" type="xml">
+            <form string="Shuttle Stop">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_usage"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-chart-bar">
+                            <field name="usage_count" widget="statinfo"
+                                   string="Usage"/>
+                        </button>
+                    </div>
+
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger"
+                            invisible="active"/>
+
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g., Main Station"/>
+                        </h1>
+                        <group>
+                            <field name="code" readonly="1"/>
+                        </group>
+                    </div>
+
+                    <group>
+                        <group string="Stop Information">
+                            <field name="stop_type" widget="radio"/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group string="Location">
+                            <field name="street" placeholder="Street name"/>
+                            <field name="street2" placeholder="Additional address"/>
+                            <field name="city" placeholder="City"/>
+                            <field name="state_id" options="{'no_create': True}"/>
+                            <field name="zip"/>
+                            <field name="country_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <group string="GPS Coordinates">
+                        <group>
+                            <field name="latitude"
+                                   placeholder="e.g., 35.7595"/>
+                            <field name="longitude"
+                                   placeholder="e.g., -5.8340"/>
+                        </group>
+                        <group>
+                            <!-- Map widget placeholder -->
+                            <div class="alert alert-info" role="alert">
+                                You can get coordinates from Google Maps
+                            </div>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Additional information about this stop..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_shuttle_stop_search" model="ir.ui.view">
+        <field name="name">shuttle.stop.search</field>
+        <field name="model">shuttle.stop</field>
+        <field name="arch" type="xml">
+            <search string="Search Stops">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="city"/>
+                <separator/>
+                <filter string="Pickup" name="pickup"
+                        domain="[('stop_type', 'in', ['pickup', 'both'])]"/>
+                <filter string="Dropoff" name="dropoff"
+                        domain="[('stop_type', 'in', ['dropoff', 'both'])]"/>
+                <separator/>
+                <filter string="Archived" name="inactive"
+                        domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="City" name="group_city"
+                            context="{'group_by': 'city'}"/>
+                    <filter string="Stop Type" name="group_type"
+                            context="{'group_by': 'stop_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_shuttle_stop" model="ir.actions.act_window">
+        <field name="name">Shuttle Stops</field>
+        <field name="res_model">shuttle.stop</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first shuttle stop!
+            </p>
+            <p>
+                Define pickup and dropoff locations for your shuttle service.
+            </p>
+        </field>
+    </record>
+</odoo>

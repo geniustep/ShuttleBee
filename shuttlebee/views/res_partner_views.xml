@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Partner Form View Extension -->
+    <record id="view_partner_form_shuttle" model="ir.ui.view">
+        <field name="name">res.partner.form.shuttle</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Add button in button box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_shuttle_trips"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-bus"
+                        invisible="not is_shuttle_passenger">
+                    <field name="total_trips" widget="statinfo" string="Trips"/>
+                </button>
+            </xpath>
+
+            <!-- Add Shuttle tab -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Shuttle Information" name="shuttle_info"
+                      invisible="not is_shuttle_passenger">
+                    <group>
+                        <group string="Passenger Info">
+                            <field name="is_shuttle_passenger"/>
+                            <field name="default_pickup_stop_id"/>
+                            <field name="default_dropoff_stop_id"/>
+                        </group>
+                        <group string="Statistics">
+                            <field name="total_trips"/>
+                            <field name="present_trips"/>
+                            <field name="absent_trips"/>
+                            <field name="attendance_rate" widget="progressbar"/>
+                        </group>
+                    </group>
+                    <group string="Shuttle Notes">
+                        <field name="shuttle_notes" nolabel="1"
+                               placeholder="Special requirements or notes for transportation..."/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Passengers Action -->
+    <record id="action_shuttle_passengers" model="ir.actions.act_window">
+        <field name="name">Shuttle Passengers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_shuttle_passenger', '=', True)]</field>
+        <field name="context">{'default_is_shuttle_passenger': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first shuttle passenger!
+            </p>
+            <p>
+                Register passengers who will use the shuttle service.
+            </p>
+        </field>
+    </record>
+</odoo>

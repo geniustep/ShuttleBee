@@ -1,0 +1,13 @@
+This is a placeholder for the module icon.
+
+Please replace this file with an actual icon.png file (128x128px recommended).
+
+The icon should represent a shuttle or bus theme, preferably with a bee element
+to match the "ShuttleBee" branding.
+
+You can use free icon resources like:
+- https://www.flaticon.com
+- https://icons8.com
+- Or create a custom icon using design tools
+
+For now, Odoo will use a default placeholder icon.

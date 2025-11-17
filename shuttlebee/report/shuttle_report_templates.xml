@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Trip Report -->
+    <template id="report_shuttle_trip_document">
+        <t t-call="web.external_layout">
+            <div class="page">
+                <div class="oe_structure"/>
+
+                <h2>
+                    <span>Trip Report: </span>
+                    <span t-field="doc.reference"/>
+                </h2>
+
+                <div class="row mt-4">
+                    <div class="col-6">
+                        <strong>Trip Name:</strong> <span t-field="doc.name"/><br/>
+                        <strong>Type:</strong> <span t-field="doc.trip_type"/><br/>
+                        <strong>Date:</strong> <span t-field="doc.date"/><br/>
+                        <strong>Driver:</strong> <span t-field="doc.driver_id"/><br/>
+                    </div>
+                    <div class="col-6">
+                        <strong>Planned Start:</strong> <span t-field="doc.planned_start_time"/><br/>
+                        <strong>Actual Start:</strong> <span t-field="doc.actual_start_time"/><br/>
+                        <strong>Duration:</strong> <span t-field="doc.duration"/> hours<br/>
+                        <strong>Status:</strong> <span t-field="doc.state"/><br/>
+                    </div>
+                </div>
+
+                <h3 class="mt-4">Capacity Information</h3>
+                <div class="row">
+                    <div class="col-3">
+                        <strong>Total Seats:</strong> <span t-field="doc.total_seats"/>
+                    </div>
+                    <div class="col-3">
+                        <strong>Booked:</strong> <span t-field="doc.booked_seats"/>
+                    </div>
+                    <div class="col-3">
+                        <strong>Available:</strong> <span t-field="doc.available_seats"/>
+                    </div>
+                    <div class="col-3">
+                        <strong>Occupancy:</strong> <span t-field="doc.occupancy_rate"/>%
+                    </div>
+                </div>
+
+                <h3 class="mt-4">Passenger List</h3>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Passenger</th>
+                            <th>Pickup Stop</th>
+                            <th>Seats</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="doc.line_ids" t-as="line">
+                            <td><span t-esc="line_index + 1"/></td>
+                            <td><span t-field="line.passenger_id"/></td>
+                            <td><span t-field="line.pickup_stop_id"/></td>
+                            <td><span t-field="line.seat_count"/></td>
+                            <td>
+                                <span t-field="line.status"
+                                      t-attf-class="badge badge-#{
+                                          'success' if line.status == 'boarded'
+                                          else 'danger' if line.status == 'absent'
+                                          else 'primary'}"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="oe_structure"/>
+            </div>
+        </t>
+    </template>
+
+    <record id="action_report_shuttle_trip" model="ir.actions.report">
+        <field name="name">Trip Report</field>
+        <field name="model">shuttle.trip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">shuttlebee.report_shuttle_trip_document</field>
+        <field name="report_file">shuttlebee.report_shuttle_trip_document</field>
+        <field name="binding_model_id" ref="model_shuttle_trip"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

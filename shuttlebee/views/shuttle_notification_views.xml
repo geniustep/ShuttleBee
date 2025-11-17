@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_shuttle_notification_list" model="ir.ui.view">
+        <field name="name">shuttle.notification.list</field>
+        <field name="model">shuttle.notification</field>
+        <field name="arch" type="xml">
+            <list string="Notifications"
+                  decoration-success="status=='delivered'"
+                  decoration-danger="status=='failed'"
+                  decoration-muted="status=='pending'">
+                <field name="create_date"/>
+                <field name="trip_id"/>
+                <field name="passenger_id"/>
+                <field name="notification_type" widget="badge"/>
+                <field name="channel" widget="badge"/>
+                <field name="status" widget="badge"/>
+                <field name="sent_date"/>
+                <button name="action_retry" type="object"
+                        string="Retry" icon="fa-refresh"
+                        invisible="status != 'failed'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_shuttle_notification_form" model="ir.ui.view">
+        <field name="name">shuttle.notification.form</field>
+        <field name="model">shuttle.notification</field>
+        <field name="arch" type="xml">
+            <form string="Notification">
+                <header>
+                    <button name="action_retry" string="Retry Send"
+                            type="object" class="oe_highlight"
+                            invisible="status not in ['failed', 'pending']"/>
+                    <button name="action_mark_delivered" string="Mark Delivered"
+                            type="object"
+                            invisible="status != 'sent'"/>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="trip_id"/>
+                            <field name="passenger_id"/>
+                            <field name="notification_type"/>
+                            <field name="channel"/>
+                        </group>
+                        <group>
+                            <field name="sent_date"/>
+                            <field name="delivered_date"/>
+                            <field name="read_date"/>
+                            <field name="recipient_phone"/>
+                            <field name="recipient_email"/>
+                        </group>
+                    </group>
+                    <group string="Message">
+                        <field name="message_content" nolabel="1"/>
+                    </group>
+                    <group string="Response" invisible="not api_response">
+                        <field name="api_response" nolabel="1" readonly="1"/>
+                    </group>
+                    <group string="Error" invisible="not error_message">
+                        <field name="error_message" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_shuttle_notification_search" model="ir.ui.view">
+        <field name="name">shuttle.notification.search</field>
+        <field name="model">shuttle.notification</field>
+        <field name="arch" type="xml">
+            <search string="Search Notifications">
+                <field name="passenger_id"/>
+                <field name="trip_id"/>
+                <separator/>
+                <filter string="Pending" name="pending" domain="[('status', '=', 'pending')]"/>
+                <filter string="Sent" name="sent" domain="[('status', '=', 'sent')]"/>
+                <filter string="Failed" name="failed" domain="[('status', '=', 'failed')]"/>
+                <filter string="Delivered" name="delivered" domain="[('status', '=', 'delivered')]"/>
+                <separator/>
+                <filter string="Today" name="today"
+                        domain="[('create_date', '&gt;=', context_today())]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_status"
+                            context="{'group_by': 'status'}"/>
+                    <filter string="Type" name="group_type"
+                            context="{'group_by': 'notification_type'}"/>
+                    <filter string="Channel" name="group_channel"
+                            context="{'group_by': 'channel'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_shuttle_notification" model="ir.actions.act_window">
+        <field name="name">Notifications</field>
+        <field name="res_model">shuttle.notification</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_today': 1}</field>
+    </record>
+</odoo>

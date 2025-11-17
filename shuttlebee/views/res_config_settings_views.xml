@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_shuttlebee" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.shuttlebee</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="ShuttleBee" name="shuttlebee"
+                     groups="shuttlebee.group_shuttle_manager">
+                    <block title="Notification Settings" name="notification_settings">
+                        <setting string="Default Notification Channel">
+                            <field name="shuttlebee_notification_channel"/>
+                        </setting>
+                        <setting string="Notification Timing">
+                            <div class="text-muted">
+                                Configure when to send notifications
+                            </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_approaching_minutes"/>
+                                <field name="shuttlebee_approaching_minutes" class="oe_inline"/>
+                                <span class="oe_inline"> minutes before arrival</span>
+                            </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_absent_timeout"/>
+                                <field name="shuttlebee_absent_timeout" class="oe_inline"/>
+                                <span class="oe_inline"> minutes after start to mark absent</span>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="API Configuration" name="api_configuration">
+                        <setting string="SMS Settings">
+                            <div class="mt-2">
+                                <label for="shuttlebee_sms_api_url" string="API URL"/>
+                                <field name="shuttlebee_sms_api_url" placeholder="https://api.sms-provider.com"/>
+                            </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_sms_api_key" string="API Key"/>
+                                <field name="shuttlebee_sms_api_key" password="True"/>
+                            </div>
+                        </setting>
+                        <setting string="WhatsApp Settings">
+                            <div class="mt-2">
+                                <label for="shuttlebee_whatsapp_api_url" string="API URL"/>
+                                <field name="shuttlebee_whatsapp_api_url" placeholder="https://api.whatsapp.com"/>
+                            </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_whatsapp_api_key" string="API Key"/>
+                                <field name="shuttlebee_whatsapp_api_key" password="True"/>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Message Templates" name="message_templates">
+                        <setting string="Approaching Message Template">
+                            <field name="shuttlebee_template_approaching"
+                                   placeholder="Use {passenger_name}, {driver_name}, {stop_name}, {eta}"/>
+                        </setting>
+                        <setting string="Arrived Message Template">
+                            <field name="shuttlebee_template_arrived"
+                                   placeholder="Use {passenger_name}, {driver_name}, {stop_name}"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_shuttle_trip_user,shuttle.trip.user,model_shuttle_trip,group_shuttle_user,1,0,0,0
+access_shuttle_trip_driver,shuttle.trip.driver,model_shuttle_trip,group_shuttle_driver,1,1,0,0
+access_shuttle_trip_dispatcher,shuttle.trip.dispatcher,model_shuttle_trip,group_shuttle_dispatcher,1,1,1,0
+access_shuttle_trip_manager,shuttle.trip.manager,model_shuttle_trip,group_shuttle_manager,1,1,1,1
+access_shuttle_trip_line_user,shuttle.trip.line.user,model_shuttle_trip_line,group_shuttle_user,1,0,0,0
+access_shuttle_trip_line_driver,shuttle.trip.line.driver,model_shuttle_trip_line,group_shuttle_driver,1,1,0,0
+access_shuttle_trip_line_dispatcher,shuttle.trip.line.dispatcher,model_shuttle_trip_line,group_shuttle_dispatcher,1,1,1,1
+access_shuttle_trip_line_manager,shuttle.trip.line.manager,model_shuttle_trip_line,group_shuttle_manager,1,1,1,1
+access_shuttle_stop_user,shuttle.stop.user,model_shuttle_stop,group_shuttle_user,1,0,0,0
+access_shuttle_stop_driver,shuttle.stop.driver,model_shuttle_stop,group_shuttle_driver,1,0,0,0
+access_shuttle_stop_dispatcher,shuttle.stop.dispatcher,model_shuttle_stop,group_shuttle_dispatcher,1,1,1,0
+access_shuttle_stop_manager,shuttle.stop.manager,model_shuttle_stop,group_shuttle_manager,1,1,1,1
+access_shuttle_notification_user,shuttle.notification.user,model_shuttle_notification,group_shuttle_user,1,0,0,0
+access_shuttle_notification_driver,shuttle.notification.driver,model_shuttle_notification,group_shuttle_driver,1,1,1,0
+access_shuttle_notification_dispatcher,shuttle.notification.dispatcher,model_shuttle_notification,group_shuttle_dispatcher,1,1,1,0
+access_shuttle_notification_manager,shuttle.notification.manager,model_shuttle_notification,group_shuttle_manager,1,1,1,1
