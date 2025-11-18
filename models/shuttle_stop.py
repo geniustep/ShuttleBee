@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import math
+
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 
 class ShuttleStop(models.Model):
@@ -63,7 +65,8 @@ class ShuttleStop(models.Model):
     company_id = fields.Many2one(
         'res.company',
         string='Company',
-        default=lambda self: self.env.company
+        default=lambda self: self.env.company,
+        index=True
     )
 
     # Constraints
@@ -83,12 +86,8 @@ class ShuttleStop(models.Model):
     @api.depends('pickup_line_ids', 'dropoff_line_ids')
     def _compute_usage_count(self):
         for stop in self:
-            pickup_count = self.env['shuttle.trip.line'].search_count([
-                ('pickup_stop_id', '=', stop.id)
-            ])
-            dropoff_count = self.env['shuttle.trip.line'].search_count([
-                ('dropoff_stop_id', '=', stop.id)
-            ])
+            pickup_count = len(stop.pickup_line_ids)
+            dropoff_count = len(stop.dropoff_line_ids)
             stop.usage_count = pickup_count + dropoff_count
 
     # Relations (for usage computation)
@@ -137,3 +136,74 @@ class ShuttleStop(models.Model):
                 ('dropoff_stop_id', '=', self.id)
             ],
         }
+
+    # Service Methods
+    @api.model
+    def _haversine_distance(self, lat1, lon1, lat2, lon2):
+        """Calculate distance in kilometers between two points"""
+        if None in (lat1, lon1, lat2, lon2):
+            return None
+
+        # Earth radius in kilometers
+        R = 6371.0
+
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        a = (math.sin(dlat / 2) ** 2 +
+             math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    @api.model
+    def suggest_nearest(self, latitude, longitude, limit=1, stop_type=None, company_id=None):
+        """Return the nearest active stops for given coordinates"""
+        if latitude is None or longitude is None:
+            raise UserError(_('Latitude and longitude are required to find nearest stops.'))
+
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+        except (TypeError, ValueError):
+            raise ValidationError(_('Invalid latitude or longitude value.'))
+
+        if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+            raise ValidationError(_('Latitude must be between -90 and 90, and longitude between -180 and 180.'))
+
+        domain = [('active', '=', True)]
+        if stop_type:
+            if stop_type not in ['pickup', 'dropoff', 'both']:
+                raise ValidationError(_('Invalid stop_type value.'))
+            domain.append(('stop_type', 'in', ['both', stop_type]))
+
+        if company_id:
+            company = self.env['res.company'].browse(company_id)
+            if not company.exists():
+                raise UserError(_('Company not found.'))
+            domain.append(('company_id', '=', company.id))
+
+        stops = self.search(domain)
+        if not stops:
+            return []
+
+        suggestions = []
+        for stop in stops:
+            distance = self._haversine_distance(latitude, longitude, stop.latitude, stop.longitude)
+            if distance is None:
+                continue
+            suggestions.append({
+                'stop_id': stop.id,
+                'name': stop.name,
+                'distance_km': round(distance, 3),
+                'stop_type': stop.stop_type,
+            })
+
+        suggestions.sort(key=lambda s: s['distance_km'])
+        limit = int(limit) if limit else 1
+        return suggestions[:limit]

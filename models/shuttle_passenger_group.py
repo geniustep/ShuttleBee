@@ -11,7 +11,7 @@ class ShuttlePassengerGroup(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'name'
 
-    name = fields.Char(string='Group Name', required=True, tracking=True)
+    name = fields.Char(string='Group Name', required=True, tracking=True, translate=True)
     code = fields.Char(string='Reference', copy=False)
     driver_id = fields.Many2one(
         'res.users',
@@ -41,12 +41,13 @@ class ShuttlePassengerGroup(models.Model):
              'Will be used as dropoff stop for pickup trips and pickup stop for dropoff trips.'
     )
     color = fields.Integer(string='Color Index')
-    notes = fields.Text(string='Notes')
+    notes = fields.Text(string='Notes', translate=True)
     active = fields.Boolean(default=True)
     company_id = fields.Many2one(
         'res.company',
         string='Company',
-        default=lambda self: self.env.company
+        default=lambda self: self.env.company,
+        index=True
     )
 
     line_ids = fields.One2many(
@@ -54,8 +55,30 @@ class ShuttlePassengerGroup(models.Model):
         'group_id',
         string='Passengers'
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Currency',
+        related='company_id.currency_id',
+        store=True,
+        readonly=True
+    )
+    subscription_price = fields.Monetary(
+        string='Subscription Price',
+        currency_field='currency_id',
+        help='Default price for this passenger group (monthly or per trip).'
+    )
+    billing_cycle = fields.Selection([
+        ('per_trip', 'Per Trip'),
+        ('monthly', 'Monthly'),
+        ('per_term', 'Per Term/Semester'),
+    ], string='Billing Cycle', default='monthly')
     member_count = fields.Integer(
         string='Passenger Count',
+        compute='_compute_member_count',
+        store=True
+    )
+    passenger_count = fields.Integer(
+        string='Passenger Count (Cached)',
         compute='_compute_member_count',
         store=True
     )
@@ -68,7 +91,9 @@ class ShuttlePassengerGroup(models.Model):
     @api.depends('line_ids')
     def _compute_member_count(self):
         for group in self:
-            group.member_count = len(group.line_ids)
+            total = len(group.line_ids)
+            group.member_count = total
+            group.passenger_count = total
 
     def action_open_generate_trip_wizard(self):
         self.ensure_one()
@@ -172,19 +197,21 @@ class ShuttlePassengerGroupLine(models.Model):
     pickup_stop_id = fields.Many2one(
         'shuttle.stop',
         string='Pickup Stop',
-        domain=[('stop_type', 'in', ['pickup', 'both'])]
+        domain=[('stop_type', 'in', ['pickup', 'both'])],
+        ondelete='restrict'
     )
     dropoff_stop_id = fields.Many2one(
         'shuttle.stop',
         string='Dropoff Stop',
-        domain=[('stop_type', 'in', ['dropoff', 'both'])]
+        domain=[('stop_type', 'in', ['dropoff', 'both'])],
+        ondelete='restrict'
     )
     seat_count = fields.Integer(
         string='Seats',
         default=1,
         help='Seats reserved for this passenger (for siblings, etc.).'
     )
-    notes = fields.Char(string='Notes / Requirements')
+    notes = fields.Char(string='Notes / Requirements', translate=True)
     company_id = fields.Many2one(
         'res.company',
         related='group_id.company_id',
@@ -199,33 +226,6 @@ class ShuttlePassengerGroupLine(models.Model):
         ('positive_seat_requirement', 'CHECK(seat_count > 0)',
          'Seat count must be positive.'),
     ]
-
-    def _calculate_distance(self, lat1, lon1, lat2, lon2):
-        """
-        Calculate distance between two GPS coordinates using Haversine formula
-        Returns distance in kilometers
-        """
-        if not all([lat1, lon1, lat2, lon2]):
-            return None
-        
-        # Radius of Earth in kilometers
-        R = 6371.0
-        
-        # Convert to radians
-        lat1_rad = math.radians(lat1)
-        lon1_rad = math.radians(lon1)
-        lat2_rad = math.radians(lat2)
-        lon2_rad = math.radians(lon2)
-        
-        # Haversine formula
-        dlat = lat2_rad - lat1_rad
-        dlon = lon2_rad - lon1_rad
-        
-        a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        
-        distance = R * c
-        return distance
 
     def action_suggest_nearest_stop(self):
         """
@@ -261,42 +261,16 @@ class ShuttlePassengerGroupLine(models.Model):
         # Get stop_type from context or default to pickup
         stop_type = self._context.get('stop_type', 'pickup')
         
-        # Get all stops of the requested type
-        domain = [('stop_type', 'in', [stop_type, 'both']), ('active', '=', True)]
-        stops = self.env['shuttle.stop'].search(domain)
-        
-        if not stops:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Warning'),
-                    'message': _('No active stops found for %s.') % stop_type,
-                    'type': 'warning',
-                    'sticky': False,
-                }
-            }
-        
-        # Calculate distances
-        nearest_stop = None
-        min_distance = float('inf')
-        
-        for stop in stops:
-            if not (stop.latitude and stop.longitude):
-                continue
-            
-            distance = self._calculate_distance(
-                passenger.shuttle_latitude,
-                passenger.shuttle_longitude,
-                stop.latitude,
-                stop.longitude
-            )
-            
-            if distance is not None and distance < min_distance:
-                min_distance = distance
-                nearest_stop = stop
-        
-        if not nearest_stop:
+        # Suggest stops via central service
+        suggestions = self.env['shuttle.stop'].suggest_nearest(
+            latitude=passenger.shuttle_latitude,
+            longitude=passenger.shuttle_longitude,
+            limit=1,
+            stop_type=stop_type,
+            company_id=self.company_id.id
+        )
+
+        if not suggestions:
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
@@ -307,6 +281,9 @@ class ShuttlePassengerGroupLine(models.Model):
                     'sticky': False,
                 }
             }
+
+        nearest = suggestions[0]
+        nearest_stop = self.env['shuttle.stop'].browse(nearest['stop_id'])
         
         # Set the nearest stop
         if stop_type == 'pickup':
@@ -320,7 +297,7 @@ class ShuttlePassengerGroupLine(models.Model):
             'params': {
                 'title': _('Success'),
                 'message': _('Nearest %s stop: %s (%.2f km away)') % (
-                    stop_type, nearest_stop.name, min_distance
+                    stop_type, nearest_stop.name, nearest['distance_km']
                 ),
                 'type': 'success',
                 'sticky': False,

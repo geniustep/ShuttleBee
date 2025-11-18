@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import uuid
+
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class ResPartner(models.Model):
@@ -70,6 +73,21 @@ class ResPartner(models.Model):
         digits=(10, 7),
         help='GPS longitude for custom pickup location'
     )
+    guardian_id = fields.Many2one(
+        'res.partner',
+        string='Guardian / Parent',
+        help='Primary guardian responsible for this passenger.'
+    )
+    guardian_phone = fields.Char(
+        string='Guardian Phone'
+    )
+    guardian_email = fields.Char(
+        string='Guardian Email'
+    )
+    portal_access_token = fields.Char(
+        string='Portal Access Token',
+        copy=False
+    )
 
     # Computed Methods
     @api.depends('shuttle_trip_line_ids.status')
@@ -98,3 +116,34 @@ class ResPartner(models.Model):
             'domain': [('passenger_id', '=', self.id)],
             'context': {'default_passenger_id': self.id}
         }
+
+    def _ensure_portal_token(self):
+        for partner in self:
+            if not partner.portal_access_token:
+                partner.portal_access_token = uuid.uuid4().hex
+
+    def action_send_portal_invitation(self):
+        """Prepare to send a portal invitation email to the guardian"""
+        for partner in self:
+            if not partner.guardian_email:
+                raise ValidationError(
+                    _('Please set a guardian email before sending an invitation.')
+                )
+            partner._ensure_portal_token()
+            body = _(
+                'Hello %(guardian)s,<br/><br/>'
+                'You can access the ShuttleBee portal to follow %(student)s using the following token: <b>%(token)s</b>.<br/>'
+                'A dedicated portal interface will be available soon.<br/><br/>'
+                'Best regards,<br/>ShuttleBee'
+            ) % {
+                'guardian': partner.guardian_id.name or partner.guardian_email,
+                'student': partner.name,
+                'token': partner.portal_access_token,
+            }
+            mail_values = {
+                'subject': _('ShuttleBee Portal Invitation'),
+                'body_html': body,
+                'email_to': partner.guardian_email,
+                'email_from': partner.company_id.email or self.env.user.email or 'noreply@example.com',
+            }
+            self.env['mail.mail'].create(mail_values).send()

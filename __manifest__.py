@@ -38,6 +38,7 @@ Perfect for:
         'contacts',
         'partner_autocomplete',
         'fleet',
+        'account',
     ],
     'data': [
         # Security
@@ -74,4 +75,5 @@ Perfect for:
     'auto_install': False,
     'price': 0.00,
     'currency': 'USD',
+    'post_init_hook': 'post_init_hook',
 }

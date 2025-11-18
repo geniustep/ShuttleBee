@@ -10,7 +10,7 @@ class ShuttleVehicle(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'name'
 
-    name = fields.Char(string='Vehicle Name', required=True, tracking=True)
+    name = fields.Char(string='Vehicle Name', required=True, tracking=True, translate=True)
     fleet_vehicle_id = fields.Many2one(
         'fleet.vehicle',
         string='Fleet Vehicle',
@@ -37,12 +37,13 @@ class ShuttleVehicle(models.Model):
     )
     color = fields.Integer(string='Color Index')
     active = fields.Boolean(default=True)
-    note = fields.Text(string='Notes')
+    note = fields.Text(string='Notes', translate=True)
     company_id = fields.Many2one(
         'res.company',
         string='Company',
         default=lambda self: self.env.company,
-        required=True
+        required=True,
+        index=True
     )
     trip_ids = fields.One2many(
         'shuttle.trip',

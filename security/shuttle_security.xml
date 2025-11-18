@@ -10,28 +10,28 @@
 
         <!-- Groups -->
         <record id="group_shuttle_user" model="res.groups">
-            <field name="name">User</field>
+            <field name="name">ShuttleBee User</field>
             <field name="category_id" ref="module_category_shuttlebee"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Basic access to view own trips</field>
         </record>
 
         <record id="group_shuttle_driver" model="res.groups">
-            <field name="name">Driver</field>
+            <field name="name">ShuttleBee Driver</field>
             <field name="category_id" ref="module_category_shuttlebee"/>
             <field name="implied_ids" eval="[(4, ref('group_shuttle_user'))]"/>
             <field name="comment">Can manage own trips and update passenger status</field>
         </record>
 
         <record id="group_shuttle_dispatcher" model="res.groups">
-            <field name="name">Dispatcher</field>
+            <field name="name">ShuttleBee Dispatcher</field>
             <field name="category_id" ref="module_category_shuttlebee"/>
             <field name="implied_ids" eval="[(4, ref('group_shuttle_driver'))]"/>
             <field name="comment">Can create and manage all trips</field>
         </record>
 
         <record id="group_shuttle_manager" model="res.groups">
-            <field name="name">Manager</field>
+            <field name="name">ShuttleBee Manager</field>
             <field name="category_id" ref="module_category_shuttlebee"/>
             <field name="implied_ids" eval="[(4, ref('group_shuttle_dispatcher'))]"/>
             <field name="comment">Full access including settings and deletion</field>
@@ -43,7 +43,7 @@
         <record id="shuttle_trip_rule_user" model="ir.rule">
             <field name="name">Shuttle Trip: User - Own Only</field>
             <field name="model_id" ref="model_shuttle_trip"/>
-            <field name="domain_force">[('line_ids.passenger_id.user_ids', 'in', user.id)]</field>
+            <field name="domain_force">['|', ('line_ids.passenger_id.user_ids', 'in', user.id), ('driver_id', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('group_shuttle_user'))]"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
@@ -92,5 +92,139 @@
             <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
         </record>
 
+        <!-- Shuttle Trip Line Rules -->
+        <record id="shuttle_trip_line_rule_user" model="ir.rule">
+            <field name="name">Trip Line: User</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="domain_force">['|', ('passenger_id.user_ids', 'in', user.id), ('trip_id.driver_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_trip_line_rule_driver" model="ir.rule">
+            <field name="name">Trip Line: Driver</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="domain_force">[('trip_id.driver_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_driver'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_trip_line_rule_dispatcher" model="ir.rule">
+            <field name="name">Trip Line: Dispatcher</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_dispatcher'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_trip_line_rule_manager" model="ir.rule">
+            <field name="name">Trip Line: Manager</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="shuttle_trip_line_comp_rule" model="ir.rule">
+            <field name="name">Trip Line: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="domain_force">[('trip_id.company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+
+        <record id="shuttle_passenger_group_comp_rule" model="ir.rule">
+            <field name="name">Passenger Group: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_passenger_group"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+
+        <record id="shuttle_stop_comp_rule" model="ir.rule">
+            <field name="name">Stop: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_stop"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+
+        <record id="shuttle_vehicle_comp_rule" model="ir.rule">
+            <field name="name">Vehicle: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_vehicle"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+
+        <record id="shuttle_notification_comp_rule" model="ir.rule">
+            <field name="name">Notification: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_notification"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+
+        <!-- GPS Position Multi-Company Rule - Created via Python post-init to avoid model loading order issues -->
+        <!--
+        <record id="shuttle_gps_position_comp_rule" model="ir.rule">
+            <field name="name">GPS Position: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_gps_position"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+        -->
+
+        <!-- Shuttle Notification Rules -->
+        <record id="shuttle_notification_rule_user" model="ir.rule">
+            <field name="name">Notification: User</field>
+            <field name="model_id" ref="model_shuttle_notification"/>
+            <field name="domain_force">['|', ('passenger_id.user_ids', 'in', user.id), ('trip_id.driver_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_notification_rule_driver" model="ir.rule">
+            <field name="name">Notification: Driver</field>
+            <field name="model_id" ref="model_shuttle_notification"/>
+            <field name="domain_force">[('trip_id.driver_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_driver'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_notification_rule_dispatcher" model="ir.rule">
+            <field name="name">Notification: Dispatcher</field>
+            <field name="model_id" ref="model_shuttle_notification"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_dispatcher'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_notification_rule_manager" model="ir.rule">
+            <field name="name">Notification: Manager</field>
+            <field name="model_id" ref="model_shuttle_notification"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
     </data>
 </odoo>

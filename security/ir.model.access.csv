@@ -5,7 +5,7 @@ access_shuttle_trip_dispatcher,shuttle.trip.dispatcher,model_shuttle_trip,group_
 access_shuttle_trip_manager,shuttle.trip.manager,model_shuttle_trip,group_shuttle_manager,1,1,1,1
 access_shuttle_trip_line_user,shuttle.trip.line.user,model_shuttle_trip_line,group_shuttle_user,1,0,0,0
 access_shuttle_trip_line_driver,shuttle.trip.line.driver,model_shuttle_trip_line,group_shuttle_driver,1,1,0,0
-access_shuttle_trip_line_dispatcher,shuttle.trip.line.dispatcher,model_shuttle_trip_line,group_shuttle_dispatcher,1,1,1,1
+access_shuttle_trip_line_dispatcher,shuttle.trip.line.dispatcher,model_shuttle_trip_line,group_shuttle_dispatcher,1,1,1,0
 access_shuttle_trip_line_manager,shuttle.trip.line.manager,model_shuttle_trip_line,group_shuttle_manager,1,1,1,1
 access_shuttle_stop_user,shuttle.stop.user,model_shuttle_stop,group_shuttle_user,1,0,0,0
 access_shuttle_stop_driver,shuttle.stop.driver,model_shuttle_stop,group_shuttle_driver,1,0,0,0
@@ -28,3 +28,7 @@ access_shuttle_vehicle_user,shuttle.vehicle.user,model_shuttle_vehicle,group_shu
 access_shuttle_vehicle_driver,shuttle.vehicle.driver,model_shuttle_vehicle,group_shuttle_driver,1,0,0,0
 access_shuttle_vehicle_dispatcher,shuttle.vehicle.dispatcher,model_shuttle_vehicle,group_shuttle_dispatcher,1,1,1,0
 access_shuttle_vehicle_manager,shuttle.vehicle.manager,model_shuttle_vehicle,group_shuttle_manager,1,1,1,1
+access_shuttle_gps_position_user,shuttle.gps.position.user,model_shuttle_gps_position,group_shuttle_user,1,0,0,0
+access_shuttle_gps_position_driver,shuttle.gps.position.driver,model_shuttle_gps_position,group_shuttle_driver,1,1,0,0
+access_shuttle_gps_position_dispatcher,shuttle.gps.position.dispatcher,model_shuttle_gps_position,group_shuttle_dispatcher,1,1,1,0
+access_shuttle_gps_position_manager,shuttle.gps.position.manager,model_shuttle_gps_position,group_shuttle_manager,1,1,1,1

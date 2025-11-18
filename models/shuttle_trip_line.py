@@ -2,7 +2,7 @@
 
 import logging
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -37,12 +37,14 @@ class ShuttleTripLine(models.Model):
     pickup_stop_id = fields.Many2one(
         'shuttle.stop',
         string='Pickup Stop',
-        domain=[('stop_type', 'in', ['pickup', 'both'])]
+        domain=[('stop_type', 'in', ['pickup', 'both'])],
+        ondelete='restrict'
     )
     dropoff_stop_id = fields.Many2one(
         'shuttle.stop',
         string='Dropoff Stop',
-        domain=[('stop_type', 'in', ['dropoff', 'both'])]
+        domain=[('stop_type', 'in', ['dropoff', 'both'])],
+        ondelete='restrict'
     )
 
     # GPS Coordinates (used when passenger has no assigned stop)
@@ -82,13 +84,45 @@ class ShuttleTripLine(models.Model):
         ('boarded', 'Boarded'),
         ('absent', 'Absent'),
         ('dropped', 'Dropped Off')
-    ], string='Status', default='planned', required=True)
+    ], string='Status', default='planned', required=True, index=True)
 
     # Sequence
     sequence = fields.Integer(
         string='Stop Sequence',
         default=10,
         help='Order of pickup/dropoff in the trip'
+    )
+
+    boarding_time = fields.Datetime(
+        string='Boarding Time',
+        readonly=True,
+        copy=False
+    )
+    absence_reason = fields.Char(
+        string='Absence Reason',
+        help='Optional reason provided when marking the passenger absent.'
+    )
+    is_billable = fields.Boolean(
+        string='Billable',
+        default=True
+    )
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Currency',
+        related='trip_id.company_id.currency_id',
+        store=True,
+        readonly=True
+    )
+    price = fields.Monetary(
+        string='Price',
+        currency_field='currency_id',
+        help='Optional price for this passenger on this trip.'
+    )
+    invoice_line_id = fields.Many2one(
+        'account.move.line',
+        string='Invoice Line',
+        readonly=True,
+        ondelete='set null'
     )
 
     # Related Fields (for convenience)
@@ -203,32 +237,94 @@ class ShuttleTripLine(models.Model):
                     raise ValidationError(_('Dropoff location must have either a Stop or GPS coordinates for dropoff trips!'))
 
     # Methods
+    def _ensure_trip_state(self, allowed_states, action_label):
+        """Ensure trip is in an allowed state before changing passenger status"""
+        state_labels = dict(self.env['shuttle.trip']._fields['state'].selection)
+        for line in self:
+            if line.trip_id and line.trip_id.state not in allowed_states:
+                raise UserError(_(
+                    'Cannot %s while trip "%s" is in state %s.'
+                ) % (action_label, line.trip_id.name, state_labels.get(line.trip_id.state, line.trip_id.state)))
+
+    def _service_response(self, updates):
+        """Return structured data for API consumers when requested"""
+        if self.env.context.get('service_response'):
+            return {
+                'updated_count': len(updates),
+                'details': updates,
+            }
+        return True
+
     def action_mark_boarded(self):
         """Mark passenger as boarded"""
-        self.write({'status': 'boarded'})
+        self._ensure_trip_state(['ongoing'], _('mark passenger as boarded'))
+        updates = []
         for line in self:
+            previous_status = line.status
+            if previous_status != 'boarded':
+                line.write({
+                    'status': 'boarded',
+                    'boarding_time': fields.Datetime.now(),
+                    'absence_reason': False,
+                })
             line.trip_id.message_post(
                 body=_('Passenger %s has boarded.') % line.passenger_id.name
             )
-        return True
+            updates.append({
+                'trip_line_id': line.id,
+                'trip_id': line.trip_id.id,
+                'previous_status': previous_status,
+                'new_status': line.status,
+            })
+        return self._service_response(updates)
 
     def action_mark_absent(self):
         """Mark passenger as absent"""
-        self.write({'status': 'absent'})
+        self._ensure_trip_state(['planned', 'ongoing'], _('mark passenger as absent'))
+        updates = []
+        reason = self.env.context.get('absence_reason')
         for line in self:
+            previous_status = line.status
+            if previous_status != 'absent':
+                vals = {
+                    'status': 'absent',
+                    'boarding_time': False,
+                }
+                if reason:
+                    vals['absence_reason'] = reason
+                line.write(vals)
             line.trip_id.message_post(
                 body=_('Passenger %s marked as absent.') % line.passenger_id.name
             )
-        return True
+            updates.append({
+                'trip_line_id': line.id,
+                'trip_id': line.trip_id.id,
+                'previous_status': previous_status,
+                'new_status': line.status,
+            })
+        return self._service_response(updates)
 
     def action_mark_dropped(self):
         """Mark passenger as dropped off"""
-        self.write({'status': 'dropped'})
+        self._ensure_trip_state(['ongoing'], _('mark passenger as dropped off'))
+        updates = []
         for line in self:
+            previous_status = line.status
+            if previous_status != 'dropped':
+                line.write({
+                    'status': 'dropped',
+                    'absence_reason': False,
+                })
             line.trip_id.message_post(
                 body=_('Passenger %s dropped off.') % line.passenger_id.name
             )
-        return True
+            updates.append({
+                'trip_line_id': line.id,
+                'trip_id': line.trip_id.id,
+                'previous_status': previous_status,
+                'new_status': line.status,
+            })
+        return self._service_response(updates)
 
     def action_send_approaching_notification(self):
         """Send approaching notification"""
