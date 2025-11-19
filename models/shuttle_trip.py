@@ -277,9 +277,12 @@ class ShuttleTrip(models.Model):
             # Check for overlapping trips (including draft trips)
             if not trip.planned_start_time:
                 continue
-                
-            start_time = trip.planned_start_time
-            end_time = trip.planned_arrival_time or (start_time + timedelta(hours=2))  # Default 2 hours if no arrival time
+            
+            # Ensure datetime objects
+            start_time = fields.Datetime.to_datetime(trip.planned_start_time) if trip.planned_start_time else False
+            if not start_time:
+                continue
+            end_time = fields.Datetime.to_datetime(trip.planned_arrival_time) if trip.planned_arrival_time else (start_time + timedelta(hours=2))  # Default 2 hours if no arrival time
             
             # Check vehicle conflict (check against all trips except cancelled ones)
             if trip.vehicle_id:
@@ -293,11 +296,20 @@ class ShuttleTrip(models.Model):
                 
                 conflicting_trips = self.search(vehicle_domain)
                 for conflict in conflicting_trips:
-                    conflict_start = conflict.planned_start_time
-                    conflict_end = conflict.planned_arrival_time or (conflict_start + timedelta(hours=2))
+                    # Ensure datetime objects
+                    conflict_start = fields.Datetime.to_datetime(conflict.planned_start_time) if conflict.planned_start_time else False
+                    if not conflict_start:
+                        continue
+                    conflict_end = fields.Datetime.to_datetime(conflict.planned_arrival_time) if conflict.planned_arrival_time else (conflict_start + timedelta(hours=2))
+                    
+                    # Ensure start_time and end_time are datetime objects
+                    start_dt = fields.Datetime.to_datetime(start_time) if start_time else False
+                    end_dt = fields.Datetime.to_datetime(end_time) if end_time else False
+                    if not start_dt or not end_dt:
+                        continue
                     
                     # Check if time ranges overlap
-                    if start_time < conflict_end and end_time > conflict_start:
+                    if start_dt < conflict_end and end_dt > conflict_start:
                         raise ValidationError(_(
                             'Vehicle conflict detected!\n\n'
                             'Vehicle "%s" is already assigned to another trip:\n'
@@ -327,11 +339,20 @@ class ShuttleTrip(models.Model):
                 
                 conflicting_trips = self.search(driver_domain)
                 for conflict in conflicting_trips:
-                    conflict_start = conflict.planned_start_time
-                    conflict_end = conflict.planned_arrival_time or (conflict_start + timedelta(hours=2))
+                    # Ensure datetime objects
+                    conflict_start = fields.Datetime.to_datetime(conflict.planned_start_time) if conflict.planned_start_time else False
+                    if not conflict_start:
+                        continue
+                    conflict_end = fields.Datetime.to_datetime(conflict.planned_arrival_time) if conflict.planned_arrival_time else (conflict_start + timedelta(hours=2))
+                    
+                    # Ensure start_time and end_time are datetime objects
+                    start_dt = fields.Datetime.to_datetime(start_time) if start_time else False
+                    end_dt = fields.Datetime.to_datetime(end_time) if end_time else False
+                    if not start_dt or not end_dt:
+                        continue
                     
                     # Check if time ranges overlap
-                    if start_time < conflict_end and end_time > conflict_start:
+                    if start_dt < conflict_end and end_dt > conflict_start:
                         raise ValidationError(_(
                             'Driver conflict detected!\n\n'
                             'Driver "%s" is already assigned to another trip:\n'
@@ -826,12 +847,32 @@ class ShuttleTrip(models.Model):
         }
 
     @api.model
-    def create(self, vals):
-        """Override create to generate sequence"""
-        if vals.get('reference', _('New')) == _('New'):
-            vals['reference'] = self.env['ir.sequence'].next_by_code(
-                'shuttle.trip') or _('New')
-        return super().create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Override create to generate sequence and check conflicts"""
+        for vals in vals_list:
+            if vals.get('reference', _('New')) == _('New'):
+                vals['reference'] = self.env['ir.sequence'].next_by_code(
+                    'shuttle.trip') or _('New')
+        
+        # Create records first
+        trips = super().create(vals_list)
+        
+        # Check conflicts after creation (constraint will be called automatically, but we ensure it)
+        trips._check_vehicle_and_driver_conflict()
+        
+        return trips
+    
+    def write(self, vals):
+        """Override write to check conflicts before saving"""
+        # If relevant fields are being changed, check conflicts after write
+        if any(key in vals for key in ['vehicle_id', 'driver_id', 'planned_start_time', 'planned_arrival_time', 'date', 'state']):
+            result = super().write(vals)
+            # Check conflicts after write (constraint will be called automatically, but we ensure it)
+            self._check_vehicle_and_driver_conflict()
+            return result
+        
+        return super().write(vals)
 
     def name_get(self):
         """Custom name display"""
