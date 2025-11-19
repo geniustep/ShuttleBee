@@ -413,6 +413,25 @@ class ShuttleTrip(models.Model):
             if not trip.actual_start_time:
                 raise UserError(_('Trip must have an actual start time before you can complete it.'))
 
+            # Mark all passengers who are not absent as present
+            # For pickup trips: mark as 'boarded' if not already 'boarded' or 'dropped'
+            # For dropoff trips: mark as 'dropped' if not already 'dropped'
+            for line in trip.line_ids:
+                if line.status != 'absent':
+                    if trip.trip_type == 'pickup':
+                        # For pickup trips, mark as 'boarded' if not already 'boarded' or 'dropped'
+                        if line.status not in ['boarded', 'dropped']:
+                            line.write({
+                                'status': 'boarded',
+                                'boarding_time': fields.Datetime.now() if not line.boarding_time else line.boarding_time,
+                            })
+                    elif trip.trip_type == 'dropoff':
+                        # For dropoff trips, mark as 'dropped' if not already 'dropped'
+                        if line.status != 'dropped':
+                            line.write({
+                                'status': 'dropped',
+                            })
+
             trip.write({
                 'state': 'done',
                 'actual_arrival_time': fields.Datetime.now()
@@ -435,6 +454,46 @@ class ShuttleTrip(models.Model):
     def action_complete(self):
         """Complete the trip"""
         self.action_complete_trip()
+
+    def action_mark_all_boarded(self):
+        """Mark all passengers who are not absent as boarded"""
+        self.ensure_one()
+        if self.state != 'ongoing':
+            raise UserError(_('Only trips that are in progress can mark passengers as boarded.'))
+        
+        # Mark all passengers who are not absent as boarded
+        marked_count = 0
+        for line in self.line_ids:
+            if line.status != 'absent' and line.status != 'boarded':
+                line.write({
+                    'status': 'boarded',
+                    'boarding_time': fields.Datetime.now() if not line.boarding_time else line.boarding_time,
+                })
+                marked_count += 1
+        
+        if marked_count > 0:
+            self.message_post(
+                body=_('Marked %s passenger(s) as boarded.') % marked_count
+            )
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Success'),
+                    'message': _('Marked %s passenger(s) as boarded.') % marked_count,
+                    'type': 'success',
+                }
+            }
+        else:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Info'),
+                    'message': _('All passengers are already boarded or absent.'),
+                    'type': 'info',
+                }
+            }
         return True
 
     def action_cancel_trip(self):
@@ -1003,23 +1062,23 @@ class ShuttleTrip(models.Model):
     def _cron_send_approaching_notifications(self):
         """Send approaching notifications for upcoming trips"""
         try:
-        IrConfigParam = self.env['ir.config_parameter'].sudo()
-        approaching_minutes = int(IrConfigParam.get_param(
-            'shuttlebee.approaching_minutes', 10))
+            IrConfigParam = self.env['ir.config_parameter'].sudo()
+            approaching_minutes = int(IrConfigParam.get_param(
+                'shuttlebee.approaching_minutes', 10))
 
             if approaching_minutes <= 0:
                 _logger.warning('Approaching minutes is set to invalid value: %s. Using default 10.', approaching_minutes)
                 approaching_minutes = 10
 
-        now = fields.Datetime.now()
-        target_time = now + timedelta(minutes=approaching_minutes)
+            now = fields.Datetime.now()
+            target_time = now + timedelta(minutes=approaching_minutes)
 
-        # Find trips that should send notifications
-        trips = self.search([
-            ('state', '=', 'planned'),
-            ('planned_start_time', '<=', target_time),
-            ('planned_start_time', '>', now),
-        ])
+            # Find trips that should send notifications
+            trips = self.search([
+                ('state', '=', 'planned'),
+                ('planned_start_time', '<=', target_time),
+                ('planned_start_time', '>', now),
+            ])
 
             if not trips:
                 _logger.debug('No trips found for approaching notifications')
@@ -1046,22 +1105,22 @@ class ShuttleTrip(models.Model):
     def _cron_mark_absent_passengers(self):
         """Auto-mark passengers as absent if they haven't boarded"""
         try:
-        IrConfigParam = self.env['ir.config_parameter'].sudo()
-        absent_timeout = int(IrConfigParam.get_param(
-            'shuttlebee.absent_timeout', 5))
+            IrConfigParam = self.env['ir.config_parameter'].sudo()
+            absent_timeout = int(IrConfigParam.get_param(
+                'shuttlebee.absent_timeout', 5))
 
             if absent_timeout <= 0:
                 _logger.warning('Absent timeout is set to invalid value: %s. Using default 5.', absent_timeout)
                 absent_timeout = 5
 
-        now = fields.Datetime.now()
-        timeout_time = now - timedelta(minutes=absent_timeout)
+            now = fields.Datetime.now()
+            timeout_time = now - timedelta(minutes=absent_timeout)
 
-        # Find ongoing trips
-        trips = self.search([
-            ('state', '=', 'ongoing'),
-            ('actual_start_time', '<=', timeout_time),
-        ])
+            # Find ongoing trips
+            trips = self.search([
+                ('state', '=', 'ongoing'),
+                ('actual_start_time', '<=', timeout_time),
+            ])
 
             if not trips:
                 _logger.debug('No ongoing trips found for marking absent passengers')
@@ -1070,13 +1129,13 @@ class ShuttleTrip(models.Model):
             marked_count = 0
             error_count = 0
 
-        for trip in trips:
+            for trip in trips:
                 try:
-            for line in trip.line_ids.filtered(
-                lambda l: l.status not in ['boarded', 'absent', 'dropped']
-            ):
+                    for line in trip.line_ids.filtered(
+                        lambda l: l.status not in ['boarded', 'absent', 'dropped']
+                    ):
                         try:
-                line.action_mark_absent()
+                            line.action_mark_absent()
                             marked_count += 1
                         except Exception as e:
                             error_count += 1
@@ -1110,24 +1169,24 @@ class ShuttleTrip(models.Model):
     def _cron_send_daily_summary(self):
         """Send daily trip summary to managers"""
         try:
-        today = fields.Date.today()
-        trips = self.search([('date', '=', today)])
+            today = fields.Date.today()
+            trips = self.search([('date', '=', today)])
 
-        if not trips:
+            if not trips:
                 _logger.debug(f'No trips found for date {today} - skipping daily summary')
-            return True
+                return True
 
-        # Prepare summary
-        total_trips = len(trips)
+            # Prepare summary
+            total_trips = len(trips)
             total_passengers = sum(trips.mapped('passenger_count')) or 0
             total_present = sum(trips.mapped('present_count')) or 0
             total_absent = sum(trips.mapped('absent_count')) or 0
             attendance_rate = (total_present / total_passengers * 100) if total_passengers > 0 else 0
 
-        # Get manager group
-        try:
-            manager_group = self.env.ref('shuttlebee.group_shuttle_manager')
-            manager_users = manager_group.users
+            # Get manager group
+            try:
+                manager_group = self.env.ref('shuttlebee.group_shuttle_manager')
+                manager_users = manager_group.users
 
                 if not manager_users:
                     _logger.warning('No manager users found in group_shuttle_manager - skipping daily summary')
@@ -1140,26 +1199,26 @@ class ShuttleTrip(models.Model):
                     _logger.error(f"Email template 'shuttlebee.email_template_daily_summary' not found: {str(e)}")
                     return True
 
-            # Send email to each manager
+                # Send email to each manager
                 sent_count = 0
                 error_count = 0
 
-            for user in manager_users:
+                for user in manager_users:
                     try:
                         if not user.email:
                             _logger.warning(f"Manager user {user.name} (ID: {user.id}) has no email - skipping")
                             error_count += 1
                             continue
 
-                template.with_context(
-                    user=user,
-                    total_trips=total_trips,
-                    total_passengers=total_passengers,
-                    total_present=total_present,
-                    total_absent=total_absent,
+                        template.with_context(
+                            user=user,
+                            total_trips=total_trips,
+                            total_passengers=total_passengers,
+                            total_present=total_present,
+                            total_absent=total_absent,
                             attendance_rate=attendance_rate,
-                    today=today
-                ).send_mail(user.id, force_send=True)
+                            today=today
+                        ).send_mail(user.id, force_send=True)
                         sent_count += 1
                         _logger.debug(f"Daily summary sent to manager {user.name} ({user.email})")
 

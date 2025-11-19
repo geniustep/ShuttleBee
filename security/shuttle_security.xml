@@ -151,6 +151,18 @@
             <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
         </record>
 
+        <!-- Shuttle Stop Rules -->
+        <record id="shuttle_stop_rule_base_user" model="ir.rule">
+            <field name="name">Stop: Base User - Read All</field>
+            <field name="model_id" ref="model_shuttle_stop"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
         <record id="shuttle_stop_comp_rule" model="ir.rule">
             <field name="name">Stop: Multi-Company</field>
             <field name="model_id" ref="model_shuttle_stop"/>

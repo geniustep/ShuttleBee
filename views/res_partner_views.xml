@@ -19,28 +19,55 @@
 
             <!-- Add Shuttle tab -->
             <xpath expr="//notebook" position="inside">
-                <page string="Shuttle Information" name="shuttle_info"
-                      invisible="not is_shuttle_passenger">
+                <page string="Shuttle Information" name="shuttle_info">
                     <group>
                         <group string="Passenger Info">
                             <field name="is_shuttle_passenger"/>
-                            <field name="default_pickup_stop_id"/>
-                            <field name="default_dropoff_stop_id"/>
+                            <field name="shuttle_trip_direction" invisible="not is_shuttle_passenger"/>
                         </group>
-                        <group string="GPS Coordinates">
-                            <field name="shuttle_latitude"
-                                   help="GPS latitude for custom pickup location (if no stop assigned)"/>
-                            <field name="shuttle_longitude"
-                                   help="GPS longitude for custom pickup location (if no stop assigned)"/>
-                        </group>
-                        <group string="Statistics">
+                        <group string="Statistics" invisible="not is_shuttle_passenger">
                             <field name="total_trips"/>
                             <field name="present_trips"/>
                             <field name="absent_trips"/>
                             <field name="attendance_rate" widget="progressbar"/>
                         </group>
                     </group>
-                    <group string="Shuttle Notes">
+                    
+                    <group string="Pickup Location (Default)" invisible="not is_shuttle_passenger">
+                        <div class="alert alert-info" role="alert">
+                            <strong>Default Pickup:</strong> GPS Coordinates are used by default. You can override with a specific stop if needed.
+                        </div>
+                        <field name="use_gps_for_pickup"/>
+                        <field name="shuttle_latitude"
+                               invisible="not use_gps_for_pickup"
+                               required="use_gps_for_pickup"
+                               help="GPS latitude for pickup location (used by default when enabled)"/>
+                        <field name="shuttle_longitude"
+                               invisible="not use_gps_for_pickup"
+                               required="use_gps_for_pickup"
+                               help="GPS longitude for pickup location (used by default when enabled)"/>
+                        <field name="default_pickup_stop_id"
+                               invisible="use_gps_for_pickup"
+                               required="not use_gps_for_pickup"
+                               help="Optional: Override GPS coordinates with a specific stop"/>
+                    </group>
+                    
+                    <group string="Dropoff Location (Default)" invisible="not is_shuttle_passenger">
+                        <div class="alert alert-info" role="alert" colspan="2">
+                            <strong>Default Dropoff:</strong> Company GPS Coordinates 
+                            <span invisible="not use_gps_for_dropoff or not company_id">
+                                (<field name="company_id" readonly="1" invisible="not use_gps_for_dropoff" widget="many2one" nolabel="1"/>)
+                            </span>
+                            are used by default. You can override with a specific stop if needed.
+                        </div>
+                        <field name="use_gps_for_dropoff" string="Use Company GPS Coordinates for Dropoff"/>
+                        <field name="default_dropoff_stop_id"
+                               invisible="use_gps_for_dropoff"
+                               required="not use_gps_for_dropoff"
+                               help="Required if GPS coordinates are not used. Override company GPS coordinates with a specific stop."/>
+                    </group>
+                    
+                    <group string="Shuttle Notes" invisible="not is_shuttle_passenger">
                         <field name="shuttle_notes" nolabel="1"
                                placeholder="Special requirements or notes for transportation..."/>
                     </group>

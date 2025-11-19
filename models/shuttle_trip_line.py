@@ -256,10 +256,15 @@ class ShuttleTripLine(models.Model):
         return True
 
     def action_mark_boarded(self):
-        """Mark passenger as boarded"""
+        """Mark passenger as boarded, and mark all other passengers who are not absent as boarded"""
         self._ensure_trip_state(['ongoing'], _('mark passenger as boarded'))
         updates = []
+        trip = None
+        
         for line in self:
+            if not trip:
+                trip = line.trip_id
+            
             previous_status = line.status
             if previous_status != 'boarded':
                 line.write({
@@ -276,6 +281,30 @@ class ShuttleTripLine(models.Model):
                 'previous_status': previous_status,
                 'new_status': line.status,
             })
+        
+        # Mark all other passengers who are not absent as boarded
+        if trip:
+            marked_count = 0
+            for line in trip.line_ids:
+                if line.id not in self.ids and line.status != 'absent' and line.status != 'boarded':
+                    previous_status = line.status
+                    line.write({
+                        'status': 'boarded',
+                        'boarding_time': fields.Datetime.now() if not line.boarding_time else line.boarding_time,
+                    })
+                    updates.append({
+                        'trip_line_id': line.id,
+                        'trip_id': line.trip_id.id,
+                        'previous_status': previous_status,
+                        'new_status': line.status,
+                    })
+                    marked_count += 1
+            
+            if marked_count > 0:
+                trip.message_post(
+                    body=_('Automatically marked %s other passenger(s) as boarded.') % marked_count
+                )
+        
         return self._service_response(updates)
 
     def action_mark_absent(self):
@@ -406,29 +435,69 @@ class ShuttleTripLine(models.Model):
                 # Use stops from group line if available
                 if group_line[0].pickup_stop_id:
                     self.pickup_stop_id = group_line[0].pickup_stop_id
+                    self.pickup_latitude = False
+                    self.pickup_longitude = False
                 if group_line[0].dropoff_stop_id:
                     self.dropoff_stop_id = group_line[0].dropoff_stop_id
+                    self.dropoff_latitude = False
+                    self.dropoff_longitude = False
                 if group_line[0].seat_count:
                     self.seat_count = group_line[0].seat_count
             else:
                 # If passenger not in group, use defaults from passenger
-                self.pickup_stop_id = self.passenger_id.default_pickup_stop_id
-                self.dropoff_stop_id = self.passenger_id.default_dropoff_stop_id
+                self._apply_passenger_defaults()
         elif self.passenger_id:
-            # Set default stops from passenger
-            self.pickup_stop_id = self.passenger_id.default_pickup_stop_id
-            self.dropoff_stop_id = self.passenger_id.default_dropoff_stop_id
+            # Set defaults from passenger
+            self._apply_passenger_defaults()
+    
+    def _apply_passenger_defaults(self):
+        """Apply passenger default pickup and dropoff settings"""
+        if not self.passenger_id:
+            return
         
-        if self.passenger_id:
-            # If no pickup stop but passenger has coordinates, use them
-            if not self.pickup_stop_id and self.passenger_id.shuttle_latitude and self.passenger_id.shuttle_longitude:
-                self.pickup_latitude = self.passenger_id.shuttle_latitude
-                self.pickup_longitude = self.passenger_id.shuttle_longitude
-            
-            # If no dropoff stop but passenger has coordinates, use them for dropoff too
-            if not self.dropoff_stop_id and self.passenger_id.shuttle_latitude and self.passenger_id.shuttle_longitude:
-                self.dropoff_latitude = self.passenger_id.shuttle_latitude
-                self.dropoff_longitude = self.passenger_id.shuttle_longitude
+        passenger = self.passenger_id
+        company = self.trip_id.company_id if self.trip_id else self.env.company
+        
+        # Pickup: Use GPS if enabled and no override stop, otherwise use override stop
+        if passenger.use_gps_for_pickup and not passenger.default_pickup_stop_id:
+            # Use passenger GPS coordinates for pickup
+            if passenger.shuttle_latitude and passenger.shuttle_longitude:
+                self.pickup_stop_id = False
+                self.pickup_latitude = passenger.shuttle_latitude
+                self.pickup_longitude = passenger.shuttle_longitude
+        elif passenger.default_pickup_stop_id:
+            # Use override stop
+            self.pickup_stop_id = passenger.default_pickup_stop_id
+            self.pickup_latitude = False
+            self.pickup_longitude = False
+        elif passenger.shuttle_latitude and passenger.shuttle_longitude:
+            # Fallback: use GPS if available
+            self.pickup_stop_id = False
+            self.pickup_latitude = passenger.shuttle_latitude
+            self.pickup_longitude = passenger.shuttle_longitude
+        
+        # Dropoff: Use company GPS if enabled and no override stop, otherwise use override stop
+        if passenger.use_gps_for_dropoff and not passenger.default_dropoff_stop_id:
+            # Use company GPS coordinates for dropoff
+            if company and company.shuttle_latitude and company.shuttle_longitude:
+                self.dropoff_stop_id = False
+                self.dropoff_latitude = company.shuttle_latitude
+                self.dropoff_longitude = company.shuttle_longitude
+        elif passenger.default_dropoff_stop_id:
+            # Use override stop
+            self.dropoff_stop_id = passenger.default_dropoff_stop_id
+            self.dropoff_latitude = False
+            self.dropoff_longitude = False
+        elif company and company.shuttle_latitude and company.shuttle_longitude:
+            # Fallback: use company GPS if available
+            self.dropoff_stop_id = False
+            self.dropoff_latitude = company.shuttle_latitude
+            self.dropoff_longitude = company.shuttle_longitude
+        elif passenger.shuttle_latitude and passenger.shuttle_longitude:
+            # Fallback: use passenger GPS if company GPS not available
+            self.dropoff_stop_id = False
+            self.dropoff_latitude = passenger.shuttle_latitude
+            self.dropoff_longitude = passenger.shuttle_longitude
 
     def name_get(self):
         """Custom name display"""

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Company Form View Extension -->
+    <record id="view_company_form_shuttle" model="ir.ui.view">
+        <field name="name">res.company.form.shuttle</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <!-- Add Shuttle tab -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Shuttle Information" name="shuttle_info">
+                    <group string="GPS Location" col="2">
+                            <div class="alert alert-info" role="alert" colspan="2">
+                                <strong>Company GPS Coordinates:</strong> These coordinates will be used as the default dropoff location for all passengers. 
+                                Passengers can override this with a specific stop if needed.
+                            </div>
+                            <field name="shuttle_latitude"
+                                   digits="[10, 7]"
+                                   help="GPS latitude for company location (used as default dropoff location for passengers)"/>
+                            <field name="shuttle_longitude"
+                                   digits="[10, 7]"
+                                   help="GPS longitude for company location (used as default dropoff location for passengers)"/>
+                            <field name="shuttle_schedule_timezone"
+                                   string="Shuttle Schedule Timezone"
+                                   help="Default timezone used when interpreting shuttle schedules."
+                                   placeholder="Africa/Casablanca"/>
+                        </group>
+                </page>
+            </xpath>
+            <!-- Add Shuttle GPS Coordinates in Company Settings -->
+            <!-- <xpath expr="//form" position="inside">
+                <notebook>
+                    <page string="ShuttleBee" name="shuttlebee">
+                        <group string="GPS Location" col="2">
+                            <div class="alert alert-info" role="alert" colspan="2">
+                                <strong>Company GPS Coordinates:</strong> These coordinates will be used as the default dropoff location for all passengers. 
+                                Passengers can override this with a specific stop if needed.
+                            </div>
+                            <field name="shuttle_latitude"
+                                   digits="[10, 7]"
+                                   help="GPS latitude for company location (used as default dropoff location for passengers)"/>
+                            <field name="shuttle_longitude"
+                                   digits="[10, 7]"
+                                   help="GPS longitude for company location (used as default dropoff location for passengers)"/>
+                        </group>
+                    </page>
+                </notebook>
+            </xpath> -->
+        </field>
+    </record>
+</odoo>
+

@@ -33,5 +33,17 @@
             <field name="interval_type">days</field>
             <field name="active" eval="True"/>
         </record>
+
+        <!-- Weekly Schedule Trip Generation (Saturday 08:00) -->
+        <record id="ir_cron_generate_weekly_schedule_trips" model="ir.cron">
+            <field name="name">ShuttleBee: Generate Weekly Schedule Trips</field>
+            <field name="model_id" ref="model_shuttle_passenger_group"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_generate_weekly_trips()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">weeks</field>
+            <field name="nextcall">1970-01-03 08:00:00</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

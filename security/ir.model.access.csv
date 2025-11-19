@@ -11,6 +11,7 @@ access_shuttle_stop_user,shuttle.stop.user,model_shuttle_stop,group_shuttle_user
 access_shuttle_stop_driver,shuttle.stop.driver,model_shuttle_stop,group_shuttle_driver,1,0,0,0
 access_shuttle_stop_dispatcher,shuttle.stop.dispatcher,model_shuttle_stop,group_shuttle_dispatcher,1,1,1,0
 access_shuttle_stop_manager,shuttle.stop.manager,model_shuttle_stop,group_shuttle_manager,1,1,1,1
+access_shuttle_stop_base_user,shuttle.stop.base.user,model_shuttle_stop,base.group_user,1,0,0,0
 access_shuttle_notification_user,shuttle.notification.user,model_shuttle_notification,group_shuttle_user,1,0,0,0
 access_shuttle_notification_driver,shuttle.notification.driver,model_shuttle_notification,group_shuttle_driver,1,1,1,0
 access_shuttle_notification_dispatcher,shuttle.notification.dispatcher,model_shuttle_notification,group_shuttle_dispatcher,1,1,1,0
@@ -28,7 +29,15 @@ access_shuttle_vehicle_user,shuttle.vehicle.user,model_shuttle_vehicle,group_shu
 access_shuttle_vehicle_driver,shuttle.vehicle.driver,model_shuttle_vehicle,group_shuttle_driver,1,0,0,0
 access_shuttle_vehicle_dispatcher,shuttle.vehicle.dispatcher,model_shuttle_vehicle,group_shuttle_dispatcher,1,1,1,0
 access_shuttle_vehicle_manager,shuttle.vehicle.manager,model_shuttle_vehicle,group_shuttle_manager,1,1,1,1
-access_shuttle_gps_position_user,shuttle.gps.position.user,model_shuttle_gps_position,group_shuttle_user,1,0,0,0
-access_shuttle_gps_position_driver,shuttle.gps.position.driver,model_shuttle_gps_position,group_shuttle_driver,1,1,0,0
-access_shuttle_gps_position_dispatcher,shuttle.gps.position.dispatcher,model_shuttle_gps_position,group_shuttle_dispatcher,1,1,1,0
-access_shuttle_gps_position_manager,shuttle.gps.position.manager,model_shuttle_gps_position,group_shuttle_manager,1,1,1,1
+access_shuttle_trip_base_user,shuttle.trip.base.user,model_shuttle_trip,base.group_user,1,0,0,0
+access_shuttle_trip_line_base_user,shuttle.trip.line.base.user,model_shuttle_trip_line,base.group_user,1,0,0,0
+access_shuttle_group_base_user,shuttle.passenger.group.base.user,model_shuttle_passenger_group,base.group_user,1,0,0,0
+access_shuttle_group_line_base_user,shuttle.passenger.group.line.base.user,model_shuttle_passenger_group_line,base.group_user,1,0,0,0
+access_shuttle_vehicle_base_user,shuttle.vehicle.base.user,model_shuttle_vehicle,base.group_user,1,0,0,0
+access_shuttle_notification_base_user,shuttle.notification.base.user,model_shuttle_notification,base.group_user,1,0,0,0
+access_shuttle_group_schedule_manager,shuttle.group.schedule.manager,model_shuttle_passenger_group_schedule,shuttlebee.group_shuttle_manager,1,1,1,1
+access_shuttle_group_schedule_dispatcher,shuttle.group.schedule.dispatcher,model_shuttle_passenger_group_schedule,shuttlebee.group_shuttle_dispatcher,1,1,1,1
+access_shuttle_group_holiday_manager,shuttle.group.holiday.manager,model_shuttle_passenger_group_holiday,shuttlebee.group_shuttle_manager,1,1,1,1
+access_shuttle_group_holiday_dispatcher,shuttle.group.holiday.dispatcher,model_shuttle_passenger_group_holiday,shuttlebee.group_shuttle_dispatcher,1,1,1,1
+access_shuttle_group_schedule_wizard_manager,shuttle.group.schedule.wizard.manager,model_shuttle_group_schedule_generate_wizard,shuttlebee.group_shuttle_manager,1,1,1,1
+access_shuttle_group_schedule_wizard_dispatcher,shuttle.group.schedule.wizard.dispatcher,model_shuttle_group_schedule_generate_wizard,shuttlebee.group_shuttle_dispatcher,1,1,1,1

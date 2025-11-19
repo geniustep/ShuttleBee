@@ -16,15 +16,33 @@ class ResPartner(models.Model):
     )
 
     # Default Stops
+    use_gps_for_pickup = fields.Boolean(
+        string='Use GPS Coordinates for Pickup',
+        default=True,
+        help='If enabled, GPS coordinates will be used as default pickup location instead of a stop. You can still override with a specific stop.'
+    )
     default_pickup_stop_id = fields.Many2one(
         'shuttle.stop',
-        string='Default Pickup Stop',
-        domain=[('stop_type', 'in', ['pickup', 'both'])]
+        string='Default Pickup Stop (Override)',
+        domain=[('stop_type', 'in', ['pickup', 'both'])],
+        help='Optional: Override GPS coordinates with a specific stop. Leave empty to use GPS coordinates.'
     )
+    use_gps_for_dropoff = fields.Boolean(
+        string='Use Company GPS Coordinates for Dropoff',
+        default=True,
+        help='If enabled, company GPS coordinates will be used as default dropoff location. You can override with a specific stop if disabled.'
+    )
+    shuttle_trip_direction = fields.Selection([
+        ('both', 'Pickup & Dropoff'),
+        ('pickup', 'Pickup Only'),
+        ('dropoff', 'Dropoff Only'),
+    ], string='Trip Direction Preference', default='both',
+       help='Define whether this passenger uses both pickup and dropoff trips or only one direction.')
     default_dropoff_stop_id = fields.Many2one(
         'shuttle.stop',
-        string='Default Dropoff Stop',
-        domain=[('stop_type', 'in', ['dropoff', 'both'])]
+        string='Default Dropoff Stop (Override)',
+        domain=[('stop_type', 'in', ['dropoff', 'both'])],
+        help='Required if GPS coordinates are not used. Override company GPS coordinates with a specific stop.'
     )
 
     # Trip History

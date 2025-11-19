@@ -24,31 +24,44 @@
               action="action_shuttle_passengers"
               sequence="20"/>
 
+    <menuitem id="menu_shuttle_groups"
+              name="Passenger Groups"
+              parent="menu_shuttle_operations"
+              action="action_shuttle_passenger_group"
+              sequence="30"/>
+
     <!-- Configuration Menu -->
     <menuitem id="menu_shuttle_configuration"
               name="Configuration"
               parent="menu_shuttle_root"
-              sequence="90"
-              groups="group_shuttle_manager"/>
+              sequence="90"/>
 
     <menuitem id="menu_shuttle_stops"
               name="Stops"
               parent="menu_shuttle_configuration"
               action="action_shuttle_stop"
-              sequence="10"/>
+              sequence="10"
+              groups="group_shuttle_dispatcher"/>
+
+    <menuitem id="menu_shuttle_vehicles"
+              name="Vehicles"
+              parent="menu_shuttle_configuration"
+              action="action_shuttle_vehicle"
+              sequence="20"
+              groups="group_shuttle_dispatcher"/>
 
     <menuitem id="menu_shuttle_settings"
               name="Settings"
               parent="menu_shuttle_configuration"
               action="base.res_config_setting_act_window"
-              sequence="99"/>
+              sequence="99"
+              groups="group_shuttle_manager"/>
 
     <!-- Reports Menu -->
     <menuitem id="menu_shuttle_reports"
               name="Reports"
               parent="menu_shuttle_root"
-              sequence="50"
-              groups="group_shuttle_dispatcher"/>
+              sequence="50"/>
 
     <menuitem id="menu_shuttle_notifications"
               name="Notification Log"
