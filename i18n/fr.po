@@ -1,0 +1,875 @@
+# Translation file for Odoo 18
+# Module: shuttlebee
+# Language: fr
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-19 18:00:00\n"
+"PO-Revision-Date: 2025-01-19 18:00:00\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#. module: shuttlebee
+#: model:ir.module.category,name:shuttlebee.module_category_shuttle
+msgid "ShuttleBee"
+msgstr "ShuttleBee"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_passenger_group
+msgid "Passenger Group / Route Template"
+msgstr "Groupe de Passagers / Modèle d'Itinéraire"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_trip
+msgid "Shuttle Trip"
+msgstr "Trajet de Navette"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_trip_line
+msgid "Shuttle Trip Line (Passenger)"
+msgstr "Ligne de Trajet (Passager)"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_stop
+msgid "Shuttle Stop"
+msgstr "Arrêt de Navette"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_vehicle
+msgid "Shuttle Vehicle"
+msgstr "Véhicule de Navette"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_passenger_group_schedule
+msgid "Passenger Group Schedule"
+msgstr "Horaire du Groupe de Passagers"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_passenger_group_holiday
+msgid "Passenger Group Holiday"
+msgstr "Jour Férié du Groupe de Passagers"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_group_schedule_generate_wizard
+msgid "Generate Trips from Passenger Group Schedule"
+msgstr "Générer des Trajets à partir de l'Horaire du Groupe de Passagers"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__name
+msgid "Group Name"
+msgstr "Nom du Groupe"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__driver_id
+msgid "Default Driver"
+msgstr "Chauffeur par Défaut"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__vehicle_id
+msgid "Vehicle"
+msgstr "Véhicule"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__total_seats
+msgid "Seat Capacity"
+msgstr "Capacité des Sièges"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__trip_type
+msgid "Default Trip Type"
+msgstr "Type de Trajet par Défaut"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__destination_stop_id
+msgid "Destination Stop (School/Work)"
+msgstr "Arrêt de Destination (École/Travail)"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__use_company_destination
+msgid "Use Company Destination"
+msgstr "Utiliser la Destination de l'Entreprise"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__destination_latitude
+msgid "Destination Latitude"
+msgstr "Latitude de Destination"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__destination_longitude
+msgid "Destination Longitude"
+msgstr "Longitude de Destination"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__notes
+msgid "Notes"
+msgstr "Notes"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__line_ids
+msgid "Passengers"
+msgstr "Passagers"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__schedule_ids
+msgid "Weekly Schedule"
+msgstr "Horaire Hebdomadaire"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__holiday_ids
+msgid "Holidays / Exceptions"
+msgstr "Jours Fériés / Exceptions"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__schedule_timezone
+msgid "Schedule Timezone"
+msgstr "Fuseau Horaire de l'Horaire"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__name
+msgid "Trip Name"
+msgstr "Nom du Trajet"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__trip_type
+msgid "Trip Type"
+msgstr "Type de Trajet"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__driver_id
+msgid "Driver"
+msgstr "Chauffeur"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__vehicle_id
+msgid "Vehicle"
+msgstr "Véhicule"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__group_id
+msgid "Passenger Group"
+msgstr "Groupe de Passagers"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__date
+msgid "Trip Date"
+msgstr "Date du Trajet"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__planned_start_time
+msgid "Planned Start Time"
+msgstr "Heure de Départ Prévue"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__planned_arrival_time
+msgid "Planned Arrival Time"
+msgstr "Heure d'Arrivée Prévue"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__state
+msgid "Status"
+msgstr "Statut"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__passenger_id
+msgid "Passenger"
+msgstr "Passager"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__pickup_stop_id
+msgid "Pickup Stop"
+msgstr "Arrêt de Prise en Charge"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__dropoff_stop_id
+msgid "Dropoff Stop"
+msgstr "Arrêt de Dépose"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__status
+msgid "Status"
+msgstr "Statut"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_stop__name
+msgid "Stop Name"
+msgstr "Nom de l'Arrêt"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_stop__stop_type
+msgid "Stop Type"
+msgstr "Type d'Arrêt"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_vehicle__name
+msgid "Vehicle Name"
+msgstr "Nom du Véhicule"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__weekday
+msgid "Weekday"
+msgstr "Jour de la Semaine"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__pickup_time
+msgid "Pickup Time"
+msgstr "Heure de Prise en Charge"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__dropoff_time
+msgid "Dropoff Time"
+msgstr "Heure de Dépose"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__create_pickup
+msgid "Create Pickup"
+msgstr "Créer une Prise en Charge"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__create_dropoff
+msgid "Create Dropoff"
+msgstr "Créer une Dépose"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_holiday__name
+msgid "Holiday Name"
+msgstr "Nom du Jour Férié"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_holiday__start_date
+msgid "Start Date"
+msgstr "Date de Début"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_holiday__end_date
+msgid "End Date"
+msgstr "Date de Fin"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_company__shuttle_latitude
+msgid "Company Latitude"
+msgstr "Latitude de l'Entreprise"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_company__shuttle_longitude
+msgid "Company Longitude"
+msgstr "Longitude de l'Entreprise"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_company__shuttle_schedule_timezone
+msgid "Schedule Timezone"
+msgstr "Fuseau Horaire de l'Horaire"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_partner__use_gps_for_pickup
+msgid "Use GPS Coordinates for Pickup"
+msgstr "Utiliser les Coordonnées GPS pour la Prise en Charge"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_partner__use_gps_for_dropoff
+msgid "Use Company GPS Coordinates for Dropoff"
+msgstr "Utiliser les Coordonnées GPS de l'Entreprise pour la Dépose"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_partner__shuttle_trip_direction
+msgid "Trip Direction Preference"
+msgstr "Préférence de Direction du Trajet"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_operations
+msgid "Operations"
+msgstr "Opérations"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_groups
+msgid "Passenger Groups"
+msgstr "Groupes de Passagers"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_trips
+msgid "Trips"
+msgstr "Trajets"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_passengers
+msgid "Passengers"
+msgstr "Passagers"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_configuration
+msgid "Configuration"
+msgstr "Configuration"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_stops
+msgid "Stops"
+msgstr "Arrêts"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_vehicles
+msgid "Vehicles"
+msgstr "Véhicules"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_reports
+msgid "Reports"
+msgstr "Rapports"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_trip
+msgid "Shuttle Trips"
+msgstr "Trajets de Navette"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_passenger_group
+msgid "Passenger Groups"
+msgstr "Groupes de Passagers"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_stop
+msgid "Shuttle Stops"
+msgstr "Arrêts de Navette"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_vehicle
+msgid "Shuttle Vehicles"
+msgstr "Véhicules de Navette"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,trip_type:0
+msgid "Pickup (Morning)"
+msgstr "Prise en Charge (Matin)"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,trip_type:0
+msgid "Dropoff (Evening)"
+msgstr "Dépose (Soir)"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Draft"
+msgstr "Brouillon"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Planned"
+msgstr "Planifié"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Ongoing"
+msgstr "En Cours"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Done"
+msgstr "Terminé"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Cancelled"
+msgstr "Annulé"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Planned"
+msgstr "Planifié"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Notified - Approaching"
+msgstr "Notifié - Approche"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Notified - Arrived"
+msgstr "Notifié - Arrivé"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Boarded"
+msgstr "Embarqué"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Absent"
+msgstr "Absent"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Dropped Off"
+msgstr "Déposé"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,trip_type:0
+msgid "Pickup (Home ➜ School)"
+msgstr "Prise en Charge (Domicile ➜ École)"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,trip_type:0
+msgid "Dropoff (School ➜ Home)"
+msgstr "Dépose (École ➜ Domicile)"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,trip_type:0
+msgid "Pickup & Dropoff"
+msgstr "Prise en Charge et Dépose"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,billing_cycle:0
+msgid "Per Trip"
+msgstr "Par Trajet"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,billing_cycle:0
+msgid "Monthly"
+msgstr "Mensuel"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,billing_cycle:0
+msgid "Per Term/Semester"
+msgstr "Par Trimestre/Semestre"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Monday"
+msgstr "Lundi"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Tuesday"
+msgstr "Mardi"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Wednesday"
+msgstr "Mercredi"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Thursday"
+msgstr "Jeudi"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Friday"
+msgstr "Vendredi"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Saturday"
+msgstr "Samedi"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Sunday"
+msgstr "Dimanche"
+
+#. module: shuttlebee
+#: selection:res.partner,shuttle_trip_direction:0
+msgid "Pickup & Dropoff"
+msgstr "Prise en Charge et Dépose"
+
+#. module: shuttlebee
+#: selection:res.partner,shuttle_trip_direction:0
+msgid "Pickup Only"
+msgstr "Prise en Charge Seulement"
+
+#. module: shuttlebee
+#: selection:res.partner,shuttle_trip_direction:0
+msgid "Dropoff Only"
+msgstr "Dépose Seulement"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Only trips that are in progress can be marked as done."
+msgstr "Seuls les trajets en cours peuvent être marqués comme terminés."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip must have an actual start time before you can complete it."
+msgstr "Le trajet doit avoir une heure de départ réelle avant de pouvoir le terminer."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip completed at %s"
+msgstr "Trajet terminé à %s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Pickup location must have either a Stop or GPS coordinates!"
+msgstr "L'emplacement de prise en charge doit avoir soit un arrêt soit des coordonnées GPS !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Pickup and dropoff stops must be different!"
+msgstr "Les arrêts de prise en charge et de dépose doivent être différents !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Dropoff location must have either a Stop or GPS coordinates for dropoff trips!"
+msgstr "L'emplacement de dépose doit avoir soit un arrêt soit des coordonnées GPS pour les trajets de dépose !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Passenger %s has boarded."
+msgstr "Le passager %s a embarqué."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Passenger %s marked as absent."
+msgstr "Le passager %s marqué comme absent."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Automatically marked %s other passenger(s) as boarded."
+msgstr "Marqué automatiquement %s autre(s) passager(s) comme embarqué(s)."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Marked %s passenger(s) as boarded."
+msgstr "Marqué %s passager(s) comme embarqué(s)."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "All passengers are already boarded or absent."
+msgstr "Tous les passagers sont déjà embarqués ou absents."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Only trips that are in progress can mark passengers as boarded."
+msgstr "Seuls les trajets en cours peuvent marquer les passagers comme embarqués."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Number of weeks must be greater than zero."
+msgstr "Le nombre de semaines doit être supérieur à zéro."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Select at least one trip direction to generate."
+msgstr "Sélectionnez au moins une direction de trajet à générer."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "No passenger selected"
+msgstr "Aucun passager sélectionné"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "No address specified"
+msgstr "Aucune adresse spécifiée"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Company"
+msgstr "Entreprise"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "GPS: %(lat)s / %(lng)s"
+msgstr "GPS: %(lat)s / %(lng)s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Stop #%s"
+msgstr "Arrêt #%s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "New"
+msgstr "Nouveau"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Booked seats cannot exceed total seats!"
+msgstr "Les sièges réservés ne peuvent pas dépasser le total des sièges !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip seats (%s) cannot exceed vehicle capacity (%s)."
+msgstr "Les sièges du trajet (%s) ne peuvent pas dépasser la capacité du véhicule (%s)."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Passenger Group is required for all trips!"
+msgstr "Le groupe de passagers est requis pour tous les trajets !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip must have at least one passenger before confirmation!"
+msgstr "Le trajet doit avoir au moins un passager avant confirmation !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Arrival time must be after start time!"
+msgstr "L'heure d'arrivée doit être après l'heure de départ !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Actual arrival must be after actual start!"
+msgstr "L'arrivée réelle doit être après le départ réel !"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please select a passenger group before confirming the trip."
+msgstr "Veuillez sélectionner un groupe de passagers avant de confirmer le trajet."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You need at least one passenger before confirming the trip."
+msgstr "Vous avez besoin d'au moins un passager avant de confirmer le trajet."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please assign a driver before confirming the trip."
+msgstr "Veuillez assigner un chauffeur avant de confirmer le trajet."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please set a planned start time before confirming the trip."
+msgstr "Veuillez définir une heure de départ prévue avant de confirmer le trajet."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip must have a positive number of seats."
+msgstr "Le trajet doit avoir un nombre positif de sièges."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip confirmed and ready to start."
+msgstr "Trajet confirmé et prêt à démarrer."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You can only start trips that are in the Planned state."
+msgstr "Vous ne pouvez démarrer que les trajets en état Planifié."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please assign a driver before starting the trip."
+msgstr "Veuillez assigner un chauffeur avant de démarrer le trajet."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You cannot start a trip without any passengers."
+msgstr "Vous ne pouvez pas démarrer un trajet sans passagers."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip started at %s"
+msgstr "Trajet démarré à %s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You cannot cancel a trip that is already %s."
+msgstr "Vous ne pouvez pas annuler un trajet qui est déjà %s."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip cancelled."
+msgstr "Trajet annulé."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Notifications"
+msgstr "Notifications"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip %s has started. Driver: %s"
+msgstr "Le trajet %s a démarré. Chauffeur: %s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "mark passenger as boarded"
+msgstr "marquer le passager comme embarqué"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "mark passenger as absent"
+msgstr "marquer le passager comme absent"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "mark passenger as dropped off"
+msgstr "marquer le passager comme déposé"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Passenger %s dropped off."
+msgstr "Le passager %s a été déposé."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "your location"
+msgstr "votre emplacement"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "No location"
+msgstr "Aucun emplacement"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_vehicle.py:0
+#, python-format
+msgid "Seat capacity must be greater than zero."
+msgstr "La capacité des sièges doit être supérieure à zéro."
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Confirm Trip"
+msgstr "Confirmer le Trajet"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Start Trip"
+msgstr "Démarrer le Trajet"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Complete Trip"
+msgstr "Terminer le Trajet"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Cancel"
+msgstr "Annuler"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Reset to Draft"
+msgstr "Réinitialiser en Brouillon"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Trip Information"
+msgstr "Informations du Trajet"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Schedule"
+msgstr "Horaire"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Capacity"
+msgstr "Capacité"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Passenger Statistics"
+msgstr "Statistiques des Passagers"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Stops"
+msgstr "Arrêts"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Generate Trip from Passenger Group"
+msgstr "Générer un Trajet à partir d'un Groupe de Passagers"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Pickup Trip"
+msgstr "Trajet de Prise en Charge"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Dropoff Trip"
+msgstr "Trajet de Dépose"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Generate Trips"
+msgstr "Générer les Trajets"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Generate Trips from Passenger Group Schedule"
+msgstr "Générer des Trajets à partir de l'Horaire du Groupe de Passagers"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Start Date"
+msgstr "Date de Début"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Number of Weeks"
+msgstr "Nombre de Semaines"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Include Pickup Trips"
+msgstr "Inclure les Trajets de Prise en Charge"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Include Dropoff Trips"
+msgstr "Inclure les Trajets de Dépose"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Limit to Current Week"
+msgstr "Limiter à la Semaine Actuelle"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Generate Trips"
+msgstr "Générer les Trajets"
+

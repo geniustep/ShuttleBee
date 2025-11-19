@@ -1,0 +1,875 @@
+# Translation file for Odoo 18
+# Module: shuttlebee
+# Language: ar
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-19 18:00:00\n"
+"PO-Revision-Date: 2025-01-19 18:00:00\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);\n"
+
+#. module: shuttlebee
+#: model:ir.module.category,name:shuttlebee.module_category_shuttle
+msgid "ShuttleBee"
+msgstr "شاتل بي"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_passenger_group
+msgid "Passenger Group / Route Template"
+msgstr "مجموعة الركاب / قالب المسار"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_trip
+msgid "Shuttle Trip"
+msgstr "رحلة النقل"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_trip_line
+msgid "Shuttle Trip Line (Passenger)"
+msgstr "سطر رحلة النقل (راكب)"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_stop
+msgid "Shuttle Stop"
+msgstr "محطة النقل"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_vehicle
+msgid "Shuttle Vehicle"
+msgstr "مركبة النقل"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_passenger_group_schedule
+msgid "Passenger Group Schedule"
+msgstr "جدول مجموعة الركاب"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_passenger_group_holiday
+msgid "Passenger Group Holiday"
+msgstr "عطلة مجموعة الركاب"
+
+#. module: shuttlebee
+#: model:ir.model,name:shuttlebee.model_shuttle_group_schedule_generate_wizard
+msgid "Generate Trips from Passenger Group Schedule"
+msgstr "توليد الرحلات من جدول مجموعة الركاب"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__name
+msgid "Group Name"
+msgstr "اسم المجموعة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__driver_id
+msgid "Default Driver"
+msgstr "السائق الافتراضي"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__vehicle_id
+msgid "Vehicle"
+msgstr "المركبة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__total_seats
+msgid "Seat Capacity"
+msgstr "سعة المقاعد"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__trip_type
+msgid "Default Trip Type"
+msgstr "نوع الرحلة الافتراضي"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__destination_stop_id
+msgid "Destination Stop (School/Work)"
+msgstr "محطة الوجهة (المدرسة/العمل)"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__use_company_destination
+msgid "Use Company Destination"
+msgstr "استخدام وجهة الشركة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__destination_latitude
+msgid "Destination Latitude"
+msgstr "خط عرض الوجهة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__destination_longitude
+msgid "Destination Longitude"
+msgstr "خط طول الوجهة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__notes
+msgid "Notes"
+msgstr "ملاحظات"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__line_ids
+msgid "Passengers"
+msgstr "الركاب"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__schedule_ids
+msgid "Weekly Schedule"
+msgstr "الجدول الأسبوعي"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__holiday_ids
+msgid "Holidays / Exceptions"
+msgstr "العطل / الاستثناءات"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group__schedule_timezone
+msgid "Schedule Timezone"
+msgstr "المنطقة الزمنية للجدول"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__name
+msgid "Trip Name"
+msgstr "اسم الرحلة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__trip_type
+msgid "Trip Type"
+msgstr "نوع الرحلة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__driver_id
+msgid "Driver"
+msgstr "السائق"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__vehicle_id
+msgid "Vehicle"
+msgstr "المركبة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__group_id
+msgid "Passenger Group"
+msgstr "مجموعة الركاب"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__date
+msgid "Trip Date"
+msgstr "تاريخ الرحلة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__planned_start_time
+msgid "Planned Start Time"
+msgstr "وقت البدء المخطط"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__planned_arrival_time
+msgid "Planned Arrival Time"
+msgstr "وقت الوصول المخطط"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip__state
+msgid "Status"
+msgstr "الحالة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__passenger_id
+msgid "Passenger"
+msgstr "الراكب"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__pickup_stop_id
+msgid "Pickup Stop"
+msgstr "محطة الصعود"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__dropoff_stop_id
+msgid "Dropoff Stop"
+msgstr "محطة النزول"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_trip_line__status
+msgid "Status"
+msgstr "الحالة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_stop__name
+msgid "Stop Name"
+msgstr "اسم المحطة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_stop__stop_type
+msgid "Stop Type"
+msgstr "نوع المحطة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_vehicle__name
+msgid "Vehicle Name"
+msgstr "اسم المركبة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__weekday
+msgid "Weekday"
+msgstr "يوم الأسبوع"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__pickup_time
+msgid "Pickup Time"
+msgstr "وقت الصعود"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__dropoff_time
+msgid "Dropoff Time"
+msgstr "وقت النزول"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__create_pickup
+msgid "Create Pickup"
+msgstr "إنشاء رحلة صعود"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_schedule__create_dropoff
+msgid "Create Dropoff"
+msgstr "إنشاء رحلة نزول"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_holiday__name
+msgid "Holiday Name"
+msgstr "اسم العطلة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_holiday__start_date
+msgid "Start Date"
+msgstr "تاريخ البداية"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_shuttle_passenger_group_holiday__end_date
+msgid "End Date"
+msgstr "تاريخ النهاية"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_company__shuttle_latitude
+msgid "Company Latitude"
+msgstr "خط عرض الشركة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_company__shuttle_longitude
+msgid "Company Longitude"
+msgstr "خط طول الشركة"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_company__shuttle_schedule_timezone
+msgid "Schedule Timezone"
+msgstr "المنطقة الزمنية للجدول"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_partner__use_gps_for_pickup
+msgid "Use GPS Coordinates for Pickup"
+msgstr "استخدام إحداثيات GPS للصعود"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_partner__use_gps_for_dropoff
+msgid "Use Company GPS Coordinates for Dropoff"
+msgstr "استخدام إحداثيات GPS للشركة للنزول"
+
+#. module: shuttlebee
+#: model:ir.model.fields,field_description:shuttlebee.field_res_partner__shuttle_trip_direction
+msgid "Trip Direction Preference"
+msgstr "تفضيل اتجاه الرحلة"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_operations
+msgid "Operations"
+msgstr "العمليات"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_groups
+msgid "Passenger Groups"
+msgstr "مجموعات الركاب"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_trips
+msgid "Trips"
+msgstr "الرحلات"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_passengers
+msgid "Passengers"
+msgstr "الركاب"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_configuration
+msgid "Configuration"
+msgstr "الإعدادات"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_stops
+msgid "Stops"
+msgstr "المحطات"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_vehicles
+msgid "Vehicles"
+msgstr "المركبات"
+
+#. module: shuttlebee
+#: model:ir.ui.menu,name:shuttlebee.menu_shuttle_reports
+msgid "Reports"
+msgstr "التقارير"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_trip
+msgid "Shuttle Trips"
+msgstr "رحلات النقل"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_passenger_group
+msgid "Passenger Groups"
+msgstr "مجموعات الركاب"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_stop
+msgid "Shuttle Stops"
+msgstr "محطات النقل"
+
+#. module: shuttlebee
+#: model:ir.actions.act_window,name:shuttlebee.action_shuttle_vehicle
+msgid "Shuttle Vehicles"
+msgstr "مركبات النقل"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,trip_type:0
+msgid "Pickup (Morning)"
+msgstr "صعود (صباح)"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,trip_type:0
+msgid "Dropoff (Evening)"
+msgstr "نزول (مساء)"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Draft"
+msgstr "مسودة"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Planned"
+msgstr "مخطط"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Ongoing"
+msgstr "قيد التنفيذ"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Done"
+msgstr "مكتمل"
+
+#. module: shuttlebee
+#: selection:shuttle.trip,state:0
+msgid "Cancelled"
+msgstr "ملغي"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Planned"
+msgstr "مخطط"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Notified - Approaching"
+msgstr "تم الإشعار - اقتراب"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Notified - Arrived"
+msgstr "تم الإشعار - وصول"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Boarded"
+msgstr "صعد"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Absent"
+msgstr "غائب"
+
+#. module: shuttlebee
+#: selection:shuttle.trip_line,status:0
+msgid "Dropped Off"
+msgstr "تم النزول"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,trip_type:0
+msgid "Pickup (Home ➜ School)"
+msgstr "صعود (منزل ➜ مدرسة)"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,trip_type:0
+msgid "Dropoff (School ➜ Home)"
+msgstr "نزول (مدرسة ➜ منزل)"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,trip_type:0
+msgid "Pickup & Dropoff"
+msgstr "صعود ونزول"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,billing_cycle:0
+msgid "Per Trip"
+msgstr "لكل رحلة"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,billing_cycle:0
+msgid "Monthly"
+msgstr "شهري"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group,billing_cycle:0
+msgid "Per Term/Semester"
+msgstr "لكل فصل/فصل دراسي"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Monday"
+msgstr "الإثنين"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Tuesday"
+msgstr "الثلاثاء"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Wednesday"
+msgstr "الأربعاء"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Thursday"
+msgstr "الخميس"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Friday"
+msgstr "الجمعة"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Saturday"
+msgstr "السبت"
+
+#. module: shuttlebee
+#: selection:shuttle.passenger.group.schedule,weekday:0
+msgid "Sunday"
+msgstr "الأحد"
+
+#. module: shuttlebee
+#: selection:res.partner,shuttle_trip_direction:0
+msgid "Pickup & Dropoff"
+msgstr "صعود ونزول"
+
+#. module: shuttlebee
+#: selection:res.partner,shuttle_trip_direction:0
+msgid "Pickup Only"
+msgstr "صعود فقط"
+
+#. module: shuttlebee
+#: selection:res.partner,shuttle_trip_direction:0
+msgid "Dropoff Only"
+msgstr "نزول فقط"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Only trips that are in progress can be marked as done."
+msgstr "يمكن فقط تحديد الرحلات قيد التنفيذ كمكتملة."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip must have an actual start time before you can complete it."
+msgstr "يجب أن يكون للرحلة وقت بدء فعلي قبل إكمالها."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip completed at %s"
+msgstr "اكتملت الرحلة في %s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Pickup location must have either a Stop or GPS coordinates!"
+msgstr "يجب أن يكون لموقع الصعود إما محطة أو إحداثيات GPS!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Pickup and dropoff stops must be different!"
+msgstr "يجب أن تكون محطات الصعود والنزول مختلفة!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Dropoff location must have either a Stop or GPS coordinates for dropoff trips!"
+msgstr "يجب أن يكون لموقع النزول إما محطة أو إحداثيات GPS لرحلات النزول!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Passenger %s has boarded."
+msgstr "صعد الراكب %s."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Passenger %s marked as absent."
+msgstr "تم تحديد الراكب %s كغائب."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Automatically marked %s other passenger(s) as boarded."
+msgstr "تم تحديد %s راكب آخر تلقائياً كصاعد."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Marked %s passenger(s) as boarded."
+msgstr "تم تحديد %s راكب كصاعد."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "All passengers are already boarded or absent."
+msgstr "جميع الركاب صعدوا بالفعل أو غائبون."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Only trips that are in progress can mark passengers as boarded."
+msgstr "يمكن فقط للرحلات قيد التنفيذ تحديد الركاب كصاعدين."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Number of weeks must be greater than zero."
+msgstr "يجب أن يكون عدد الأسابيع أكبر من الصفر."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Select at least one trip direction to generate."
+msgstr "اختر اتجاه رحلة واحد على الأقل للتوليد."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "No passenger selected"
+msgstr "لم يتم اختيار راكب"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "No address specified"
+msgstr "لم يتم تحديد عنوان"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Company"
+msgstr "الشركة"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "GPS: %(lat)s / %(lng)s"
+msgstr "GPS: %(lat)s / %(lng)s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_passenger_group.py:0
+#, python-format
+msgid "Stop #%s"
+msgstr "محطة #%s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "New"
+msgstr "جديد"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Booked seats cannot exceed total seats!"
+msgstr "لا يمكن أن تتجاوز المقاعد المحجوزة إجمالي المقاعد!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip seats (%s) cannot exceed vehicle capacity (%s)."
+msgstr "لا يمكن أن تتجاوز مقاعد الرحلة (%s) سعة المركبة (%s)."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Passenger Group is required for all trips!"
+msgstr "مجموعة الركاب مطلوبة لجميع الرحلات!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip must have at least one passenger before confirmation!"
+msgstr "يجب أن تحتوي الرحلة على راكب واحد على الأقل قبل التأكيد!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Arrival time must be after start time!"
+msgstr "يجب أن يكون وقت الوصول بعد وقت البدء!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Actual arrival must be after actual start!"
+msgstr "يجب أن يكون الوصول الفعلي بعد البدء الفعلي!"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please select a passenger group before confirming the trip."
+msgstr "يرجى اختيار مجموعة ركاب قبل تأكيد الرحلة."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You need at least one passenger before confirming the trip."
+msgstr "تحتاج إلى راكب واحد على الأقل قبل تأكيد الرحلة."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please assign a driver before confirming the trip."
+msgstr "يرجى تعيين سائق قبل تأكيد الرحلة."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please set a planned start time before confirming the trip."
+msgstr "يرجى تعيين وقت بدء مخطط قبل تأكيد الرحلة."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip must have a positive number of seats."
+msgstr "يجب أن يكون للرحلة عدد إيجابي من المقاعد."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip confirmed and ready to start."
+msgstr "تم تأكيد الرحلة وهي جاهزة للبدء."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You can only start trips that are in the Planned state."
+msgstr "يمكنك فقط بدء الرحلات في حالة المخطط."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Please assign a driver before starting the trip."
+msgstr "يرجى تعيين سائق قبل بدء الرحلة."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You cannot start a trip without any passengers."
+msgstr "لا يمكنك بدء رحلة بدون ركاب."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip started at %s"
+msgstr "بدأت الرحلة في %s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "You cannot cancel a trip that is already %s."
+msgstr "لا يمكنك إلغاء رحلة في حالة %s."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip cancelled."
+msgstr "تم إلغاء الرحلة."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Notifications"
+msgstr "الإشعارات"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Trip %s has started. Driver: %s"
+msgstr "بدأت الرحلة %s. السائق: %s"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "mark passenger as boarded"
+msgstr "تحديد الراكب كصاعد"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "mark passenger as absent"
+msgstr "تحديد الراكب كغائب"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "mark passenger as dropped off"
+msgstr "تحديد الراكب كنازل"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "Passenger %s dropped off."
+msgstr "نزل الراكب %s."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "your location"
+msgstr "موقعك"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip_line.py:0
+#, python-format
+msgid "No location"
+msgstr "لا يوجد موقع"
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_vehicle.py:0
+#, python-format
+msgid "Seat capacity must be greater than zero."
+msgstr "يجب أن تكون سعة المقاعد أكبر من الصفر."
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Confirm Trip"
+msgstr "تأكيد الرحلة"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Start Trip"
+msgstr "بدء الرحلة"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Complete Trip"
+msgstr "إكمال الرحلة"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Reset to Draft"
+msgstr "إعادة إلى المسودة"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Trip Information"
+msgstr "معلومات الرحلة"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Schedule"
+msgstr "الجدول"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Capacity"
+msgstr "السعة"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Passenger Statistics"
+msgstr "إحصائيات الركاب"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_form
+msgid "Stops"
+msgstr "المحطات"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Generate Trip from Passenger Group"
+msgstr "توليد رحلة من مجموعة الركاب"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Pickup Trip"
+msgstr "رحلة الصعود"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Dropoff Trip"
+msgstr "رحلة النزول"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_trip_wizard_form
+msgid "Generate Trips"
+msgstr "توليد الرحلات"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Generate Trips from Passenger Group Schedule"
+msgstr "توليد الرحلات من جدول مجموعة الركاب"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Start Date"
+msgstr "تاريخ البدء"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Number of Weeks"
+msgstr "عدد الأسابيع"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Include Pickup Trips"
+msgstr "تضمين رحلات الصعود"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Include Dropoff Trips"
+msgstr "تضمين رحلات النزول"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Limit to Current Week"
+msgstr "الحد إلى الأسبوع الحالي"
+
+#. module: shuttlebee
+#: model:ir.ui.view,arch_db:shuttlebee.view_shuttle_group_schedule_wizard_form
+msgid "Generate Trips"
+msgstr "توليد الرحلات"
+
