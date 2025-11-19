@@ -445,20 +445,19 @@ class ShuttlePassengerGroup(models.Model):
         if existing_trip:
             return existing_trip
 
+        # Calculate estimated end time (default 2 hours if no dropoff time)
+        if trip_type == 'pickup' and schedule_line.dropoff_time:
+            end_dt_value = self._combine_date_and_datetime(current_date, schedule_line.dropoff_time)
+        else:
+            # Default 2 hours duration
+            start_dt = fields.Datetime.from_string(dt_value) if isinstance(dt_value, str) else dt_value
+            end_dt_value = start_dt + timedelta(hours=2)
+        
+        start_dt = fields.Datetime.from_string(dt_value) if isinstance(dt_value, str) else dt_value
+        end_dt = fields.Datetime.from_string(end_dt_value) if isinstance(end_dt_value, str) else end_dt_value
+        
         # Check for vehicle conflict before creating trip
         if self.vehicle_id:
-            # Calculate estimated end time (default 2 hours if no dropoff time)
-            if trip_type == 'pickup' and schedule_line.dropoff_time:
-                end_dt_value = self._combine_date_and_datetime(current_date, schedule_line.dropoff_time)
-            else:
-                # Default 2 hours duration
-                start_dt = fields.Datetime.from_string(dt_value) if isinstance(dt_value, str) else dt_value
-                end_dt_value = start_dt + timedelta(hours=2)
-            
-            # Check for overlapping trips with same vehicle
-            start_dt = fields.Datetime.from_string(dt_value) if isinstance(dt_value, str) else dt_value
-            end_dt = fields.Datetime.from_string(end_dt_value) if isinstance(end_dt_value, str) else end_dt_value
-            
             conflicting = Trip.search([
                 ('id', '!=', False),  # Will be replaced by existing_trip.id if exists
                 ('vehicle_id', '=', self.vehicle_id.id),
@@ -477,6 +476,35 @@ class ShuttlePassengerGroup(models.Model):
                         'Vehicle %s already used in trip %s (%s - %s). '
                         'Skipping trip creation for %s on %s.',
                         self.vehicle_id.name,
+                        conflict.name,
+                        conflict_start,
+                        conflict_end,
+                        self.name,
+                        current_date
+                    )
+                    # Skip this trip instead of raising error (to allow other trips to be created)
+                    return Trip.browse()  # Return empty recordset
+        
+        # Check for driver conflict before creating trip
+        if self.driver_id:
+            conflicting = Trip.search([
+                ('id', '!=', False),  # Will be replaced by existing_trip.id if exists
+                ('driver_id', '=', self.driver_id.id),
+                ('date', '=', current_date),
+                ('state', 'not in', ['draft', 'cancelled']),
+            ])
+            
+            for conflict in conflicting:
+                conflict_start = conflict.planned_start_time
+                conflict_end = conflict.planned_arrival_time or (conflict_start + timedelta(hours=2))
+                
+                # Check if time ranges overlap
+                if start_dt < conflict_end and end_dt > conflict_start:
+                    _logger.warning(
+                        'Driver conflict detected when generating trip from schedule: '
+                        'Driver %s already assigned to trip %s (%s - %s). '
+                        'Skipping trip creation for %s on %s.',
+                        self.driver_id.name,
                         conflict.name,
                         conflict_start,
                         conflict_end,

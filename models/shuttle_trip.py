@@ -266,50 +266,84 @@ class ShuttleTrip(models.Model):
                 if trip.actual_arrival_time <= trip.actual_start_time:
                     raise ValidationError(_('Actual arrival must be after actual start!'))
 
-    @api.constrains('vehicle_id', 'planned_start_time', 'planned_arrival_time', 'date', 'state')
-    def _check_vehicle_conflict(self):
-        """Prevent vehicle conflicts: same vehicle cannot be used in overlapping trips"""
+    @api.constrains('vehicle_id', 'driver_id', 'planned_start_time', 'planned_arrival_time', 'date', 'state')
+    def _check_vehicle_and_driver_conflict(self):
+        """Prevent vehicle and driver conflicts: same vehicle/driver cannot be used in overlapping trips"""
         for trip in self:
-            if not trip.vehicle_id or trip.state == 'cancelled':
+            if trip.state == 'cancelled':
                 continue
             
             # Skip draft trips (they can be modified freely)
             if trip.state == 'draft':
                 continue
             
-            # Check for overlapping trips with the same vehicle
+            # Check for overlapping trips
             start_time = trip.planned_start_time
             end_time = trip.planned_arrival_time or (start_time + timedelta(hours=2))  # Default 2 hours if no arrival time
             
-            domain = [
-                ('id', '!=', trip.id),
-                ('vehicle_id', '=', trip.vehicle_id.id),
-                ('state', 'not in', ['draft', 'cancelled']),
-                ('date', '=', trip.date),
-            ]
-            
-            # Check for time overlap
-            conflicting_trips = self.search(domain)
-            for conflict in conflicting_trips:
-                conflict_start = conflict.planned_start_time
-                conflict_end = conflict.planned_arrival_time or (conflict_start + timedelta(hours=2))
+            # Check vehicle conflict
+            if trip.vehicle_id:
+                vehicle_domain = [
+                    ('id', '!=', trip.id),
+                    ('vehicle_id', '=', trip.vehicle_id.id),
+                    ('state', 'not in', ['draft', 'cancelled']),
+                    ('date', '=', trip.date),
+                ]
                 
-                # Check if time ranges overlap
-                if start_time < conflict_end and end_time > conflict_start:
-                    raise ValidationError(_(
-                        'Vehicle conflict detected!\n\n'
-                        'Vehicle "%s" is already assigned to another trip:\n'
-                        '• Trip: %s\n'
-                        '• Time: %s - %s\n'
-                        '• Group: %s\n\n'
-                        'Please choose a different vehicle or adjust the trip time.'
-                    ) % (
-                        trip.vehicle_id.name,
-                        conflict.name,
-                        conflict_start.strftime('%Y-%m-%d %H:%M'),
-                        conflict_end.strftime('%H:%M'),
-                        conflict.group_id.name if conflict.group_id else _('N/A')
-                    ))
+                conflicting_trips = self.search(vehicle_domain)
+                for conflict in conflicting_trips:
+                    conflict_start = conflict.planned_start_time
+                    conflict_end = conflict.planned_arrival_time or (conflict_start + timedelta(hours=2))
+                    
+                    # Check if time ranges overlap
+                    if start_time < conflict_end and end_time > conflict_start:
+                        raise ValidationError(_(
+                            'Vehicle conflict detected!\n\n'
+                            'Vehicle "%s" is already assigned to another trip:\n'
+                            '• Trip: %s\n'
+                            '• Time: %s - %s\n'
+                            '• Group: %s\n\n'
+                            'Please choose a different vehicle or adjust the trip time.'
+                        ) % (
+                            trip.vehicle_id.name,
+                            conflict.name,
+                            conflict_start.strftime('%Y-%m-%d %H:%M'),
+                            conflict_end.strftime('%H:%M'),
+                            conflict.group_id.name if conflict.group_id else _('N/A')
+                        ))
+            
+            # Check driver conflict
+            if trip.driver_id:
+                driver_domain = [
+                    ('id', '!=', trip.id),
+                    ('driver_id', '=', trip.driver_id.id),
+                    ('state', 'not in', ['draft', 'cancelled']),
+                    ('date', '=', trip.date),
+                ]
+                
+                conflicting_trips = self.search(driver_domain)
+                for conflict in conflicting_trips:
+                    conflict_start = conflict.planned_start_time
+                    conflict_end = conflict.planned_arrival_time or (conflict_start + timedelta(hours=2))
+                    
+                    # Check if time ranges overlap
+                    if start_time < conflict_end and end_time > conflict_start:
+                        raise ValidationError(_(
+                            'Driver conflict detected!\n\n'
+                            'Driver "%s" is already assigned to another trip:\n'
+                            '• Trip: %s\n'
+                            '• Time: %s - %s\n'
+                            '• Group: %s\n'
+                            '• Vehicle: %s\n\n'
+                            'Please choose a different driver or adjust the trip time.'
+                        ) % (
+                            trip.driver_id.name,
+                            conflict.name,
+                            conflict_start.strftime('%Y-%m-%d %H:%M'),
+                            conflict_end.strftime('%H:%M'),
+                            conflict.group_id.name if conflict.group_id else _('N/A'),
+                            conflict.vehicle_id.name if conflict.vehicle_id else _('N/A')
+                        ))
 
     # Computed Methods
     @api.depends('line_ids.seat_count')
