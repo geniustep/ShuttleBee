@@ -873,3 +873,9 @@ msgstr "Limiter à la Semaine Actuelle"
 msgid "Generate Trips"
 msgstr "Générer les Trajets"
 
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Vehicle conflict detected!\n\nVehicle \"%s\" is already assigned to another trip:\n• Trip: %s\n• Time: %s - %s\n• Group: %s\n\nPlease choose a different vehicle or adjust the trip time."
+msgstr "Conflit de véhicule détecté !\n\nLe véhicule \"%s\" est déjà assigné à un autre trajet :\n• Trajet : %s\n• Heure : %s - %s\n• Groupe : %s\n\nVeuillez choisir un autre véhicule ou ajuster l'heure du trajet."
+

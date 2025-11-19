@@ -445,6 +445,47 @@ class ShuttlePassengerGroup(models.Model):
         if existing_trip:
             return existing_trip
 
+        # Check for vehicle conflict before creating trip
+        if self.vehicle_id:
+            # Calculate estimated end time (default 2 hours if no dropoff time)
+            if trip_type == 'pickup' and schedule_line.dropoff_time:
+                end_dt_value = self._combine_date_and_datetime(current_date, schedule_line.dropoff_time)
+            else:
+                # Default 2 hours duration
+                start_dt = fields.Datetime.from_string(dt_value) if isinstance(dt_value, str) else dt_value
+                end_dt_value = start_dt + timedelta(hours=2)
+            
+            # Check for overlapping trips with same vehicle
+            start_dt = fields.Datetime.from_string(dt_value) if isinstance(dt_value, str) else dt_value
+            end_dt = fields.Datetime.from_string(end_dt_value) if isinstance(end_dt_value, str) else end_dt_value
+            
+            conflicting = Trip.search([
+                ('id', '!=', False),  # Will be replaced by existing_trip.id if exists
+                ('vehicle_id', '=', self.vehicle_id.id),
+                ('date', '=', current_date),
+                ('state', 'not in', ['draft', 'cancelled']),
+            ])
+            
+            for conflict in conflicting:
+                conflict_start = conflict.planned_start_time
+                conflict_end = conflict.planned_arrival_time or (conflict_start + timedelta(hours=2))
+                
+                # Check if time ranges overlap
+                if start_dt < conflict_end and end_dt > conflict_start:
+                    _logger.warning(
+                        'Vehicle conflict detected when generating trip from schedule: '
+                        'Vehicle %s already used in trip %s (%s - %s). '
+                        'Skipping trip creation for %s on %s.',
+                        self.vehicle_id.name,
+                        conflict.name,
+                        conflict_start,
+                        conflict_end,
+                        self.name,
+                        current_date
+                    )
+                    # Skip this trip instead of raising error (to allow other trips to be created)
+                    return Trip.browse()  # Return empty recordset
+
         trip_name = '%s - %s - %s' % (
             self.name,
             current_date.strftime('%Y-%m-%d'),
@@ -527,6 +568,30 @@ class ShuttlePassengerGroup(models.Model):
                 self.driver_id = self.vehicle_id.driver_id
             if self.vehicle_id.seat_capacity:
                 self.total_seats = self.vehicle_id.seat_capacity
+    
+    @api.constrains('vehicle_id')
+    def _check_vehicle_conflict_in_group(self):
+        """Warn if vehicle is already assigned to another active group on same schedule"""
+        for group in self:
+            if not group.vehicle_id:
+                continue
+            
+            # Check if vehicle is used in other groups with overlapping schedules
+            other_groups = self.search([
+                ('id', '!=', group.id),
+                ('vehicle_id', '=', group.vehicle_id.id),
+                ('active', '=', True),
+            ])
+            
+            if other_groups:
+                # Log warning but don't block (groups can share vehicles if schedules don't overlap)
+                _logger.info(
+                    'Vehicle %s is assigned to multiple groups: %s and %s. '
+                    'Ensure schedules do not overlap.',
+                    group.vehicle_id.name,
+                    group.name,
+                    ', '.join(other_groups.mapped('name'))
+                )
 
     @api.onchange('use_company_destination', 'company_id')
     def _onchange_use_company_destination(self):

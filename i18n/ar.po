@@ -873,3 +873,9 @@ msgstr "الحد إلى الأسبوع الحالي"
 msgid "Generate Trips"
 msgstr "توليد الرحلات"
 
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Vehicle conflict detected!\n\nVehicle \"%s\" is already assigned to another trip:\n• Trip: %s\n• Time: %s - %s\n• Group: %s\n\nPlease choose a different vehicle or adjust the trip time."
+msgstr "تم اكتشاف تعارض في المركبة!\n\nالمركبة \"%s\" معينة بالفعل لرحلة أخرى:\n• الرحلة: %s\n• الوقت: %s - %s\n• المجموعة: %s\n\nيرجى اختيار مركبة أخرى أو تعديل وقت الرحلة."
+
