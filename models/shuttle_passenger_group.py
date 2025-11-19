@@ -456,13 +456,14 @@ class ShuttlePassengerGroup(models.Model):
         start_dt = fields.Datetime.from_string(dt_value) if isinstance(dt_value, str) else dt_value
         end_dt = fields.Datetime.from_string(end_dt_value) if isinstance(end_dt_value, str) else end_dt_value
         
-        # Check for vehicle conflict before creating trip
+        # Check for vehicle conflict before creating trip (include draft trips)
         if self.vehicle_id:
             conflicting = Trip.search([
                 ('id', '!=', False),  # Will be replaced by existing_trip.id if exists
                 ('vehicle_id', '=', self.vehicle_id.id),
                 ('date', '=', current_date),
-                ('state', 'not in', ['draft', 'cancelled']),
+                ('state', '!=', 'cancelled'),  # Include draft, planned, ongoing, done
+                ('planned_start_time', '!=', False),
             ])
             
             for conflict in conflicting:
@@ -473,25 +474,27 @@ class ShuttlePassengerGroup(models.Model):
                 if start_dt < conflict_end and end_dt > conflict_start:
                     _logger.warning(
                         'Vehicle conflict detected when generating trip from schedule: '
-                        'Vehicle %s already used in trip %s (%s - %s). '
+                        'Vehicle %s already used in trip %s (%s - %s, status: %s). '
                         'Skipping trip creation for %s on %s.',
                         self.vehicle_id.name,
                         conflict.name,
                         conflict_start,
                         conflict_end,
+                        conflict.state,
                         self.name,
                         current_date
                     )
                     # Skip this trip instead of raising error (to allow other trips to be created)
                     return Trip.browse()  # Return empty recordset
         
-        # Check for driver conflict before creating trip
+        # Check for driver conflict before creating trip (include draft trips)
         if self.driver_id:
             conflicting = Trip.search([
                 ('id', '!=', False),  # Will be replaced by existing_trip.id if exists
                 ('driver_id', '=', self.driver_id.id),
                 ('date', '=', current_date),
-                ('state', 'not in', ['draft', 'cancelled']),
+                ('state', '!=', 'cancelled'),  # Include draft, planned, ongoing, done
+                ('planned_start_time', '!=', False),
             ])
             
             for conflict in conflicting:
@@ -502,12 +505,13 @@ class ShuttlePassengerGroup(models.Model):
                 if start_dt < conflict_end and end_dt > conflict_start:
                     _logger.warning(
                         'Driver conflict detected when generating trip from schedule: '
-                        'Driver %s already assigned to trip %s (%s - %s). '
+                        'Driver %s already assigned to trip %s (%s - %s, status: %s). '
                         'Skipping trip creation for %s on %s.',
                         self.driver_id.name,
                         conflict.name,
                         conflict_start,
                         conflict_end,
+                        conflict.state,
                         self.name,
                         current_date
                     )

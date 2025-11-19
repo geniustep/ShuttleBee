@@ -270,24 +270,25 @@ class ShuttleTrip(models.Model):
     def _check_vehicle_and_driver_conflict(self):
         """Prevent vehicle and driver conflicts: same vehicle/driver cannot be used in overlapping trips"""
         for trip in self:
+            # Only check cancelled trips if they are being reactivated
             if trip.state == 'cancelled':
                 continue
             
-            # Skip draft trips (they can be modified freely)
-            if trip.state == 'draft':
+            # Check for overlapping trips (including draft trips)
+            if not trip.planned_start_time:
                 continue
-            
-            # Check for overlapping trips
+                
             start_time = trip.planned_start_time
             end_time = trip.planned_arrival_time or (start_time + timedelta(hours=2))  # Default 2 hours if no arrival time
             
-            # Check vehicle conflict
+            # Check vehicle conflict (check against all trips except cancelled ones)
             if trip.vehicle_id:
                 vehicle_domain = [
                     ('id', '!=', trip.id),
                     ('vehicle_id', '=', trip.vehicle_id.id),
-                    ('state', 'not in', ['draft', 'cancelled']),
+                    ('state', '!=', 'cancelled'),  # Include draft, planned, ongoing, done
                     ('date', '=', trip.date),
+                    ('planned_start_time', '!=', False),  # Must have start time
                 ]
                 
                 conflicting_trips = self.search(vehicle_domain)
@@ -302,23 +303,26 @@ class ShuttleTrip(models.Model):
                             'Vehicle "%s" is already assigned to another trip:\n'
                             '• Trip: %s\n'
                             '• Time: %s - %s\n'
-                            '• Group: %s\n\n'
+                            '• Group: %s\n'
+                            '• Status: %s\n\n'
                             'Please choose a different vehicle or adjust the trip time.'
                         ) % (
                             trip.vehicle_id.name,
                             conflict.name,
                             conflict_start.strftime('%Y-%m-%d %H:%M'),
                             conflict_end.strftime('%H:%M'),
-                            conflict.group_id.name if conflict.group_id else _('N/A')
+                            conflict.group_id.name if conflict.group_id else _('N/A'),
+                            dict(conflict._fields['state'].selection).get(conflict.state, conflict.state)
                         ))
             
-            # Check driver conflict
+            # Check driver conflict (check against all trips except cancelled ones)
             if trip.driver_id:
                 driver_domain = [
                     ('id', '!=', trip.id),
                     ('driver_id', '=', trip.driver_id.id),
-                    ('state', 'not in', ['draft', 'cancelled']),
+                    ('state', '!=', 'cancelled'),  # Include draft, planned, ongoing, done
                     ('date', '=', trip.date),
+                    ('planned_start_time', '!=', False),  # Must have start time
                 ]
                 
                 conflicting_trips = self.search(driver_domain)
@@ -334,7 +338,8 @@ class ShuttleTrip(models.Model):
                             '• Trip: %s\n'
                             '• Time: %s - %s\n'
                             '• Group: %s\n'
-                            '• Vehicle: %s\n\n'
+                            '• Vehicle: %s\n'
+                            '• Status: %s\n\n'
                             'Please choose a different driver or adjust the trip time.'
                         ) % (
                             trip.driver_id.name,
@@ -342,7 +347,8 @@ class ShuttleTrip(models.Model):
                             conflict_start.strftime('%Y-%m-%d %H:%M'),
                             conflict_end.strftime('%H:%M'),
                             conflict.group_id.name if conflict.group_id else _('N/A'),
-                            conflict.vehicle_id.name if conflict.vehicle_id else _('N/A')
+                            conflict.vehicle_id.name if conflict.vehicle_id else _('N/A'),
+                            dict(conflict._fields['state'].selection).get(conflict.state, conflict.state)
                         ))
 
     # Computed Methods

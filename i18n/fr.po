@@ -882,6 +882,12 @@ msgstr "Conflit de véhicule détecté !\n\nLe véhicule \"%s\" est déjà assig
 #. module: shuttlebee
 #: code:addons/shuttlebee/models/shuttle_trip.py:0
 #, python-format
-msgid "Driver conflict detected!\n\nDriver \"%s\" is already assigned to another trip:\n• Trip: %s\n• Time: %s - %s\n• Group: %s\n• Vehicle: %s\n\nPlease choose a different driver or adjust the trip time."
-msgstr "Conflit de chauffeur détecté !\n\nLe chauffeur \"%s\" est déjà assigné à un autre trajet :\n• Trajet : %s\n• Heure : %s - %s\n• Groupe : %s\n• Véhicule : %s\n\nVeuillez choisir un autre chauffeur ou ajuster l'heure du trajet."
+msgid "Driver conflict detected!\n\nDriver \"%s\" is already assigned to another trip:\n• Trip: %s\n• Time: %s - %s\n• Group: %s\n• Vehicle: %s\n• Status: %s\n\nPlease choose a different driver or adjust the trip time."
+msgstr "Conflit de chauffeur détecté !\n\nLe chauffeur \"%s\" est déjà assigné à un autre trajet :\n• Trajet : %s\n• Heure : %s - %s\n• Groupe : %s\n• Véhicule : %s\n• Statut : %s\n\nVeuillez choisir un autre chauffeur ou ajuster l'heure du trajet."
+
+#. module: shuttlebee
+#: code:addons/shuttlebee/models/shuttle_trip.py:0
+#, python-format
+msgid "Vehicle conflict detected!\n\nVehicle \"%s\" is already assigned to another trip:\n• Trip: %s\n• Time: %s - %s\n• Group: %s\n• Status: %s\n\nPlease choose a different vehicle or adjust the trip time."
+msgstr "Conflit de véhicule détecté !\n\nLe véhicule \"%s\" est déjà assigné à un autre trajet :\n• Trajet : %s\n• Heure : %s - %s\n• Groupe : %s\n• Statut : %s\n\nVeuillez choisir un autre véhicule ou ajuster l'heure du trajet."
 
