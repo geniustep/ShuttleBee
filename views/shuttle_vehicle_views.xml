@@ -54,11 +54,5 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_shuttle_vehicles"
-              name="Vehicles"
-              parent="menu_shuttle_configuration"
-              action="action_shuttle_vehicle"
-              sequence="20"/>
-
 </odoo>
 
