@@ -59,6 +59,7 @@ Perfect for:
         'views/shuttle_vehicle_views.xml',
         'views/res_partner_views.xml',
         'views/res_company_views.xml',
+        'views/res_users_views.xml',
         'views/shuttle_notification_views.xml',
         'views/res_config_settings_views.xml',
         'views/shuttle_trip_wizard_views.xml',

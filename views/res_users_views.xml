@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Inherit res.users form view to add shuttle_role field -->
+    <record id="view_users_form_inherit_shuttlebee" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.shuttlebee</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Add shuttle_role field in a clean way -->
+            <xpath expr="//field[@name='email']" position="after">
+                <field name="shuttle_role" readonly="1" 
+                       widget="badge"
+                       decoration-danger="shuttle_role == 'manager'"
+                       decoration-warning="shuttle_role == 'dispatcher'"
+                       decoration-info="shuttle_role == 'driver'"
+                       decoration-success="shuttle_role == 'user'"
+                       decoration-muted="shuttle_role == 'none'"/>
+            </xpath>
+            
+            <!-- Also add to Access Rights page for better visibility -->
+            <xpath expr="//page[@name='access_rights']" position="inside">
+                <group string="ShuttleBee Access" name="shuttlebee_access">
+                    <field name="shuttle_role" readonly="1" 
+                           widget="badge"
+                           decoration-danger="shuttle_role == 'manager'"
+                           decoration-warning="shuttle_role == 'dispatcher'"
+                           decoration-info="shuttle_role == 'driver'"
+                           decoration-success="shuttle_role == 'user'"
+                           decoration-muted="shuttle_role == 'none'"/>
+                    <separator string="ShuttleBee Groups" colspan="2"/>
+                    <div class="text-muted" colspan="2">
+                        The role above is automatically calculated based on your ShuttleBee group membership.
+                        To change the role, modify the groups in the "Access Rights" tab below.
+                    </div>
+                </group>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <!-- Optional: Add shuttle_role to tree view -->
+    <record id="view_users_tree_inherit_shuttlebee" model="ir.ui.view">
+        <field name="name">res.users.tree.inherit.shuttlebee</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_tree"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//field[@name='login']" position="after">
+                <field name="shuttle_role" optional="show"
+                       decoration-danger="shuttle_role == 'manager'"
+                       decoration-warning="shuttle_role == 'dispatcher'"
+                       decoration-info="shuttle_role == 'driver'"
+                       decoration-success="shuttle_role == 'user'"
+                       decoration-muted="shuttle_role == 'none'"/>
+            </xpath>
+            
+        </field>
+    </record>
+
+</odoo>
+

@@ -1,10 +1,34 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
+
+    shuttle_role = fields.Selection([
+        ('manager', 'ShuttleBee Manager'),
+        ('dispatcher', 'ShuttleBee Dispatcher'),
+        ('driver', 'ShuttleBee Driver'),
+        ('user', 'ShuttleBee User'),
+        ('none', 'No ShuttleBee Access'),
+    ], string='ShuttleBee Role', compute='_compute_shuttle_role', store=True, readonly=True,
+       help='User role in ShuttleBee system based on assigned groups')
+
+    @api.depends('groups_id')
+    def _compute_shuttle_role(self):
+        """Compute user's ShuttleBee role based on assigned groups"""
+        for user in self:
+            if user.has_group('shuttlebee.group_shuttle_manager'):
+                user.shuttle_role = 'manager'
+            elif user.has_group('shuttlebee.group_shuttle_dispatcher'):
+                user.shuttle_role = 'dispatcher'
+            elif user.has_group('shuttlebee.group_shuttle_driver'):
+                user.shuttle_role = 'driver'
+            elif user.has_group('shuttlebee.group_shuttle_user'):
+                user.shuttle_role = 'user'
+            else:
+                user.shuttle_role = 'none'
 
     @api.model_create_multi
     def create(self, vals_list):
