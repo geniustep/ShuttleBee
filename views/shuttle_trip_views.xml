@@ -177,6 +177,11 @@
                                             icon="fa-times-circle text-danger"
                                             title="Mark Absent"
                                             invisible="status in ['absent', 'dropped']"/>
+                                    <button name="action_reset_to_planned"
+                                            type="object"
+                                            icon="fa-undo text-info"
+                                            title="Reset to Planned"
+                                            invisible="status == 'planned'"/>
                                 </list>
                                 <kanban>
                                     <field name="passenger_id"/>

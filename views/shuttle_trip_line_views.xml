@@ -33,6 +33,9 @@
                     <button name="action_mark_dropped" string="Mark Dropped"
                             type="object"
                             invisible="status != 'boarded'"/>
+                    <button name="action_reset_to_planned" string="Reset to Planned"
+                            type="object"
+                            invisible="status == 'planned'"/>
                     <field name="status" widget="statusbar"/>
                 </header>
                 <sheet>

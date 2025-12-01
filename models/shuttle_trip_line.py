@@ -256,15 +256,11 @@ class ShuttleTripLine(models.Model):
         return True
 
     def action_mark_boarded(self):
-        """Mark passenger as boarded, and mark all other passengers who are not absent as boarded"""
+        """Mark passenger as boarded"""
         self._ensure_trip_state(['ongoing'], _('mark passenger as boarded'))
         updates = []
-        trip = None
         
         for line in self:
-            if not trip:
-                trip = line.trip_id
-            
             previous_status = line.status
             if previous_status != 'boarded':
                 line.write({
@@ -281,29 +277,6 @@ class ShuttleTripLine(models.Model):
                 'previous_status': previous_status,
                 'new_status': line.status,
             })
-        
-        # Mark all other passengers who are not absent as boarded
-        if trip:
-            marked_count = 0
-            for line in trip.line_ids:
-                if line.id not in self.ids and line.status != 'absent' and line.status != 'boarded':
-                    previous_status = line.status
-                    line.write({
-                        'status': 'boarded',
-                        'boarding_time': fields.Datetime.now() if not line.boarding_time else line.boarding_time,
-                    })
-                    updates.append({
-                        'trip_line_id': line.id,
-                        'trip_id': line.trip_id.id,
-                        'previous_status': previous_status,
-                        'new_status': line.status,
-                    })
-                    marked_count += 1
-            
-            if marked_count > 0:
-                trip.message_post(
-                    body=_('Automatically marked %s other passenger(s) as boarded.') % marked_count
-                )
         
         return self._service_response(updates)
 
@@ -346,6 +319,31 @@ class ShuttleTripLine(models.Model):
                 })
             line.trip_id.message_post(
                 body=_('Passenger %s dropped off.') % line.passenger_id.name
+            )
+            updates.append({
+                'trip_line_id': line.id,
+                'trip_id': line.trip_id.id,
+                'previous_status': previous_status,
+                'new_status': line.status,
+            })
+        return self._service_response(updates)
+
+    def action_reset_to_planned(self):
+        """Reset passenger status to planned (initial state)"""
+        self._ensure_trip_state(['planned', 'ongoing'], _('reset passenger to planned'))
+        updates = []
+        for line in self:
+            previous_status = line.status
+            if previous_status != 'planned':
+                line.write({
+                    'status': 'planned',
+                    'boarding_time': False,
+                    'absence_reason': False,
+                    'approaching_notified': False,
+                    'arrived_notified': False,
+                })
+            line.trip_id.message_post(
+                body=_('Passenger %s status reset to planned.') % line.passenger_id.name
             )
             updates.append({
                 'trip_line_id': line.id,
@@ -431,18 +429,53 @@ class ShuttleTripLine(models.Model):
                 lambda l: l.passenger_id.id == self.passenger_id.id
             )
             if group_line:
-                self.group_line_id = group_line[0]
+                group_line_record = group_line[0]
+                self.group_line_id = group_line_record
                 # Use stops from group line if available
-                if group_line[0].pickup_stop_id:
-                    self.pickup_stop_id = group_line[0].pickup_stop_id
+                if group_line_record.pickup_stop_id:
+                    self.pickup_stop_id = group_line_record.pickup_stop_id
                     self.pickup_latitude = False
                     self.pickup_longitude = False
-                if group_line[0].dropoff_stop_id:
-                    self.dropoff_stop_id = group_line[0].dropoff_stop_id
+                if group_line_record.dropoff_stop_id:
+                    self.dropoff_stop_id = group_line_record.dropoff_stop_id
                     self.dropoff_latitude = False
                     self.dropoff_longitude = False
-                if group_line[0].seat_count:
-                    self.seat_count = group_line[0].seat_count
+                # Load seat_count from group line
+                if group_line_record.seat_count:
+                    self.seat_count = group_line_record.seat_count
+                # Load notes from group line
+                if group_line_record.notes:
+                    self.notes = group_line_record.notes
+                # Load sequence from group line
+                if group_line_record.sequence:
+                    self.sequence = group_line_record.sequence
+                # If no pickup stop in group line, apply passenger defaults for pickup GPS coordinates
+                if not group_line_record.pickup_stop_id:
+                    passenger = self.passenger_id
+                    if passenger.use_gps_for_pickup and passenger.shuttle_latitude and passenger.shuttle_longitude:
+                        self.pickup_stop_id = False
+                        self.pickup_latitude = passenger.shuttle_latitude
+                        self.pickup_longitude = passenger.shuttle_longitude
+                    elif passenger.shuttle_latitude and passenger.shuttle_longitude:
+                        self.pickup_stop_id = False
+                        self.pickup_latitude = passenger.shuttle_latitude
+                        self.pickup_longitude = passenger.shuttle_longitude
+                # If no dropoff stop in group line, apply passenger defaults for dropoff GPS coordinates
+                if not group_line_record.dropoff_stop_id:
+                    passenger = self.passenger_id
+                    company = self.trip_id.company_id if self.trip_id else self.env.company
+                    if passenger.use_gps_for_dropoff and company and company.shuttle_latitude and company.shuttle_longitude:
+                        self.dropoff_stop_id = False
+                        self.dropoff_latitude = company.shuttle_latitude
+                        self.dropoff_longitude = company.shuttle_longitude
+                    elif company and company.shuttle_latitude and company.shuttle_longitude:
+                        self.dropoff_stop_id = False
+                        self.dropoff_latitude = company.shuttle_latitude
+                        self.dropoff_longitude = company.shuttle_longitude
+                    elif passenger.shuttle_latitude and passenger.shuttle_longitude:
+                        self.dropoff_stop_id = False
+                        self.dropoff_latitude = passenger.shuttle_latitude
+                        self.dropoff_longitude = passenger.shuttle_longitude
             else:
                 # If passenger not in group, use defaults from passenger
                 self._apply_passenger_defaults()
