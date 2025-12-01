@@ -905,6 +905,14 @@ class ShuttleTrip(models.Model):
 - ✅ **تحديث تلقائي للصعود**: عند تسجيل راكب واحد كـ "صعد"، يتم تحديث جميع الركاب الآخرين الذين لم يُسجل لهم "غائب" إلى "صعد" تلقائياً
 - ✅ **Timezone Support**: دعم المناطق الزمنية لتفسير الأوقات بشكل صحيح عند توليد الرحلات
 - ✅ **Auto-assign Groups**: إضافة نظام لتوزيع المستخدمين تلقائياً على مجموعات ShuttleBee بناءً على مجموعات Odoo الموجودة
+- ✅ **أزرار مشروطة حسب نوع الرحلة**: 
+  - في رحلات Pickup: يظهر زر "Mark Boarded" فقط
+  - في رحلات Dropoff: يظهر زر "Mark Dropped" فقط
+  - الأزرار تظهر/تختفي تلقائياً حسب `trip_type` في كل من form view و tree view
+- ✅ **إحصائيات مشروطة حسب نوع الرحلة**:
+  - في رحلات Pickup: يظهر حقل "Boarded" في Passenger Statistics
+  - في رحلات Dropoff: يظهر حقل "Dropped" في Passenger Statistics
+  - تم إضافة حقل `dropped_count` محسوب تلقائياً بناءً على `status == 'dropped'`
 
 ---
 

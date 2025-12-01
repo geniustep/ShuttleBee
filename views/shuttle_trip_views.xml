@@ -126,7 +126,10 @@
                             <field name="passenger_count" readonly="1"/>
                             <field name="present_count" readonly="1"/>
                             <field name="absent_count" readonly="1"/>
-                            <field name="boarded_count" readonly="1"/>
+                            <field name="boarded_count" readonly="1"
+                                   invisible="trip_type == 'dropoff'"/>
+                            <field name="dropped_count" readonly="1"
+                                   invisible="trip_type == 'pickup'"/>
                         </group>
                     </group>
 
@@ -157,6 +160,7 @@
                                            optional="hide"/>
                                     <field name="seat_count"/>
                                     <field name="status" widget="badge"/>
+                                    <field name="trip_type" invisible="1"/>
                                     <button name="action_send_approaching_notification"
                                             type="object"
                                             icon="fa-paper-plane"
@@ -171,7 +175,12 @@
                                             type="object"
                                             icon="fa-check-circle text-success"
                                             title="Mark Boarded"
-                                            invisible="status in ['boarded', 'absent', 'dropped']"/>
+                                            invisible="trip_type != 'pickup' or status in ['boarded', 'absent', 'dropped']"/>
+                                    <button name="action_mark_dropped"
+                                            type="object"
+                                            icon="fa-sign-out text-success"
+                                            title="Mark Dropped"
+                                            invisible="trip_type != 'dropoff' or status in ['dropped', 'absent']"/>
                                     <button name="action_mark_absent"
                                             type="object"
                                             icon="fa-times-circle text-danger"

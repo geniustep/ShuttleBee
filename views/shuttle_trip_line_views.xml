@@ -26,19 +26,20 @@
                 <header>
                     <button name="action_mark_boarded" string="Mark Boarded"
                             type="object" class="oe_highlight"
-                            invisible="status in ['boarded', 'absent', 'dropped']"/>
+                            invisible="trip_type != 'pickup' or status in ['boarded', 'absent', 'dropped']"/>
                     <button name="action_mark_absent" string="Mark Absent"
                             type="object"
                             invisible="status in ['absent', 'dropped']"/>
                     <button name="action_mark_dropped" string="Mark Dropped"
-                            type="object"
-                            invisible="status != 'boarded'"/>
+                            type="object" class="oe_highlight"
+                            invisible="trip_type != 'dropoff' or status in ['dropped', 'absent']"/>
                     <button name="action_reset_to_planned" string="Reset to Planned"
                             type="object"
                             invisible="status == 'planned'"/>
                     <field name="status" widget="statusbar"/>
                 </header>
                 <sheet>
+                    <field name="trip_type" invisible="1"/>
                     <group>
                         <group>
                             <field name="trip_id"/>

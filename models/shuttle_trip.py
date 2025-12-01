@@ -143,6 +143,11 @@ class ShuttleTrip(models.Model):
         compute='_compute_passenger_stats',
         store=True
     )
+    dropped_count = fields.Integer(
+        string='Dropped',
+        compute='_compute_passenger_stats',
+        store=True
+    )
     occupancy_rate = fields.Float(
         string='Occupancy Rate (%)',
         compute='_compute_occupancy_rate',
@@ -392,6 +397,7 @@ class ShuttleTrip(models.Model):
             present_count = 0
             absent_count = 0
             boarded_count = 0
+            dropped_count = 0
             
             for line in lines:
                 status = line.status
@@ -401,10 +407,13 @@ class ShuttleTrip(models.Model):
                     absent_count += 1
                 if status == 'boarded':
                     boarded_count += 1
+                if status == 'dropped':
+                    dropped_count += 1
             
             trip.present_count = present_count
             trip.absent_count = absent_count
             trip.boarded_count = boarded_count
+            trip.dropped_count = dropped_count
 
     @api.depends('booked_seats', 'total_seats')
     def _compute_occupancy_rate(self):
