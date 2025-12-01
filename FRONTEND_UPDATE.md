@@ -1,252 +1,368 @@
-# 📢 تحديثات Frontend - ShuttleBee Module
+# 📢 تحديثات Backend - ShuttleBee Module
 
-**التاريخ**: 2025  
-**الإصدار**: 18.0.1.0.0  
-**الموضوع**: تحديثات واجهة المستخدم والأزرار المشروطة
-
----
-
-## 🎯 ملخص التحديثات
-
-تم إجراء تحديثات مهمة على واجهة المستخدم في ShuttleBee Module تتعلق بـ:
-
-1. **أزرار مشروطة حسب نوع الرحلة** (`trip_type`)
-2. **إحصائيات مشروطة حسب نوع الرحلة**
+**التاريخ:** 2025-12-01  
+**الإصدار:** 18.0.1.0.0  
+**النوع:** Feature Addition
 
 ---
 
-## 📋 التغييرات التفصيلية
+## 🚗 إضافة نقطة انطلاق المركبة (Vehicle Home/Parking Location)
 
-### 1. أزرار ShuttleTripLine المشروطة
+### 📋 نظرة عامة
 
-#### التغيير:
-- **في رحلات Pickup** (`trip_type == 'pickup'`):
-  - يظهر زر **"Mark Boarded"** (`action_mark_boarded`)
-  - يختفي زر **"Mark Dropped"** (`action_mark_dropped`)
+تم إضافة ميزة جديدة لتحديد **موقف المركبة الثابت** (نقطة الانطلاق) في موديل `shuttle.vehicle`. هذه النقطة تمثل الموقع الذي تبيت/تُركن فيه المركبة وتنطلق منه للرحلات.
 
-- **في رحلات Dropoff** (`trip_type == 'dropoff'`):
-  - يظهر زر **"Mark Dropped"** (`action_mark_dropped`)
-  - يختفي زر **"Mark Boarded"** (`action_mark_boarded`)
+### 🎯 الهدف من التحديث
 
-#### الملفات المتأثرة:
-- `views/shuttle_trip_line_views.xml` (Form View)
-- `views/shuttle_trip_views.xml` (Tree View داخل Form)
-
-#### الكود:
-```xml
-<!-- في Form View -->
-<button name="action_mark_boarded" 
-        invisible="trip_type != 'pickup' or status in ['boarded', 'absent', 'dropped']"/>
-
-<button name="action_mark_dropped" 
-        invisible="trip_type != 'dropoff' or status in ['dropped', 'absent']"/>
-
-<!-- في Tree View -->
-<field name="trip_type" invisible="1"/>
-<button name="action_mark_boarded"
-        invisible="trip_type != 'pickup' or status in ['boarded', 'absent', 'dropped']"/>
-<button name="action_mark_dropped"
-        invisible="trip_type != 'dropoff' or status != 'boarded'"/>
-```
+- تحديد نقطة البداية الثابتة لكل مركبة
+- تمكين حساب المسافات الكلية للرحلات (من الموقف → الركاب → الوجهة → الموقف)
+- تحسين تخطيط المسارات وتقدير الأوقات
+- توفير بيانات دقيقة لخوارزميات التحسين المستقبلية
 
 ---
 
-### 2. إحصائيات Passenger Statistics المشروطة
+## 🔧 التغييرات التقنية
 
-#### التغيير:
-- **في رحلات Pickup** (`trip_type == 'pickup'`):
-  - يظهر حقل **"Boarded"** (`boarded_count`)
-  - يختفي حقل **"Dropped"** (`dropped_count`)
+### 1. Model: `shuttle.vehicle`
 
-- **في رحلات Dropoff** (`trip_type == 'dropoff'`):
-  - يظهر حقل **"Dropped"** (`dropped_count`)
-  - يختفي حقل **"Boarded"** (`boarded_count`)
-
-#### الملفات المتأثرة:
-- `models/shuttle_trip.py` (إضافة حقل `dropped_count`)
-- `views/shuttle_trip_views.xml` (Passenger Statistics Group)
+تم إضافة **3 حقول جديدة**:
 
 #### الحقول الجديدة:
+
 ```python
-# في shuttle.trip model
-dropped_count = fields.Integer(
-    string='Dropped',
-    compute='_compute_passenger_stats',
-    store=True
+home_latitude = fields.Float(
+    string='Parking Latitude',
+    digits=(10, 7),
+    tracking=True,
+    help='GPS latitude of vehicle parking/home location'
+)
+
+home_longitude = fields.Float(
+    string='Parking Longitude',
+    digits=(10, 7),
+    tracking=True,
+    help='GPS longitude of vehicle parking/home location'
+)
+
+home_address = fields.Char(
+    string='Parking Address',
+    tracking=True,
+    help='Physical address of vehicle parking location'
 )
 ```
 
-#### الكود في View:
-```xml
-<group name="statistics" string="Passenger Statistics">
-    <field name="passenger_count" readonly="1"/>
-    <field name="present_count" readonly="1"/>
-    <field name="absent_count" readonly="1"/>
-    <field name="boarded_count" readonly="1"
-           invisible="trip_type == 'dropoff'"/>
-    <field name="dropped_count" readonly="1"
-           invisible="trip_type == 'pickup'"/>
-</group>
+#### Validation/Constraints:
+
+```python
+@api.constrains('home_latitude', 'home_longitude')
+def _check_home_coordinates(self):
+    """Validate vehicle home/parking GPS coordinates"""
+    for vehicle in self:
+        if vehicle.home_latitude and not (-90 <= vehicle.home_latitude <= 90):
+            raise ValidationError(_('Parking latitude must be between -90 and 90.'))
+        if vehicle.home_longitude and not (-180 <= vehicle.home_longitude <= 180):
+            raise ValidationError(_('Parking longitude must be between -180 and 180.'))
 ```
 
 ---
 
-## 🔧 التغييرات في Backend
+## 📊 بنية البيانات (Data Structure)
 
-### 1. حقل `dropped_count` في Model
-
-**الملف**: `models/shuttle_trip.py`
-
-**التغيير**: تم إضافة حقل جديد `dropped_count` يتم حسابه تلقائياً في دالة `_compute_passenger_stats`:
-
-```python
-dropped_count = fields.Integer(
-    string='Dropped',
-    compute='_compute_passenger_stats',
-    store=True
-)
-
-# في _compute_passenger_stats:
-dropped_count = 0
-for line in lines:
-    if status == 'dropped':
-        dropped_count += 1
-trip.dropped_count = dropped_count
-```
-
----
-
-## 📱 تأثيرات على Frontend/API
-
-### 1. حقول جديدة متاحة عبر API
-
-عند استدعاء API للحصول على معلومات الرحلة (`shuttle.trip`):
+### Model: `shuttle.vehicle`
 
 ```json
 {
-    "id": 1,
-    "name": "Morning Trip",
-    "trip_type": "dropoff",
-    "boarded_count": 0,      // موجود مسبقاً
-    "dropped_count": 3,      // ⭐ جديد
-    "passenger_count": 4,
-    "present_count": 3,
-    "absent_count": 1
+  "id": 1,
+  "name": "Bus 01",
+  "fleet_vehicle_id": 5,
+  "license_plate": "ABC-1234",
+  "seat_capacity": 20,
+  "driver_id": 10,
+  "home_latitude": 33.5731,      // ← NEW
+  "home_longitude": -7.5898,     // ← NEW
+  "home_address": "Parking A, Casablanca", // ← NEW
+  "active": true,
+  "company_id": 1
 }
 ```
 
-### 2. الأزرار المشروطة
+---
 
-عند استدعاء API للحصول على معلومات `shuttle.trip.line`:
+## 🔌 API Endpoints (للواجهات الخارجية)
 
-- يجب التحقق من `trip_type` قبل عرض الأزرار:
-  - إذا `trip_type == 'pickup'`: اعرض `action_mark_boarded` فقط
-  - إذا `trip_type == 'dropoff'`: اعرض `action_mark_dropped` فقط
+### 1. قراءة بيانات المركبة (Read)
 
-### 3. إحصائيات مشروطة
+**Endpoint:** `GET /api/shuttle.vehicle/{id}`
 
-عند عرض Passenger Statistics:
-- تحقق من `trip_type` قبل عرض الحقول:
-  - إذا `trip_type == 'pickup'`: اعرض `boarded_count`
-  - إذا `trip_type == 'dropoff'`: اعرض `dropped_count`
+**Response Example:**
+```json
+{
+  "id": 1,
+  "name": "Bus 01",
+  "home_latitude": 33.5731,
+  "home_longitude": -7.5898,
+  "home_address": "Parking A, Casablanca",
+  "seat_capacity": 20
+}
+```
+
+### 2. تحديث موقع المركبة (Update)
+
+**Endpoint:** `PUT /api/shuttle.vehicle/{id}`
+
+**Request Body:**
+```json
+{
+  "home_latitude": 33.5731,
+  "home_longitude": -7.5898,
+  "home_address": "Parking A, Casablanca"
+}
+```
+
+**Validation Rules:**
+- `home_latitude`: -90 إلى 90 (اختياري)
+- `home_longitude`: -180 إلى 180 (اختياري)
+- `home_address`: نص حر (اختياري)
 
 ---
 
-## 🎨 توصيات للتنفيذ في Frontend
+## 🎨 تحديثات الواجهة (UI Updates)
 
-### 1. عرض الأزرار
+### View Changes (Odoo Backend)
 
-```javascript
-// مثال React/Vue
-const showMarkBoarded = trip.trip_type === 'pickup' && 
-                       !['boarded', 'absent', 'dropped'].includes(line.status);
+تم تحديث `shuttle_vehicle_views.xml`:
 
-const showMarkDropped = trip.trip_type === 'dropoff' && 
-                       line.status !== 'dropped' && 
-                       line.status !== 'absent';
+1. **إضافة تبويب جديد**: "Parking Location"
+2. **الحقول المعروضة**:
+   - Parking Latitude (GPS)
+   - Parking Longitude (GPS)
+   - Parking Address (نص)
+3. **رسالة توضيحية** للمستخدم عن استخدام الموقع
 
-// في JSX/Template
-{showMarkBoarded && (
-    <button onClick={() => markBoarded(line.id)}>
-        Mark Boarded
-    </button>
-)}
+---
 
-{showMarkDropped && (
-    <button onClick={() => markDropped(line.id)}>
-        Mark Dropped
-    </button>
-)}
+## 💡 حالات الاستخدام (Use Cases)
+
+### 1. حساب المسافة الكلية للرحلة
+
+```
+المسار الكامل:
+Parking → Passenger 1 → Passenger 2 → School → Parking
 ```
 
-### 2. عرض الإحصائيات
+### 2. تقدير وقت البداية المطلوب
+
+```python
+# Example calculation
+parking_to_first_passenger = calculate_distance(
+    vehicle.home_latitude, 
+    vehicle.home_longitude,
+    first_passenger.pickup_latitude,
+    first_passenger.pickup_longitude
+)
+
+required_departure_time = trip_start_time - estimated_travel_time
+```
+
+### 3. تحسين المسارات (Route Optimization)
+
+يمكن الآن حساب المسار الأمثل الذي يبدأ وينتهي بموقف المركبة.
+
+---
+
+## 📱 توصيات للـ Frontend Team
+
+### 1. **خرائط (Maps Integration)**
+
+إذا كنتم تستخدمون Google Maps/Mapbox:
 
 ```javascript
-// مثال React/Vue
-const showBoarded = trip.trip_type === 'pickup';
-const showDropped = trip.trip_type === 'dropoff';
+// عرض موقف المركبة على الخريطة
+const vehicleParkingMarker = {
+  position: {
+    lat: vehicle.home_latitude,
+    lng: vehicle.home_longitude
+  },
+  title: "Vehicle Parking: " + vehicle.name,
+  icon: "parking_icon.png", // أيقونة موقف
+  color: "blue"
+}
+```
 
-// في JSX/Template
-<div className="statistics">
-    <div>Total Passengers: {trip.passenger_count}</div>
-    <div>Present: {trip.present_count}</div>
-    <div>Absent: {trip.absent_count}</div>
-    
-    {showBoarded && (
-        <div>Boarded: {trip.boarded_count}</div>
-    )}
-    
-    {showDropped && (
-        <div>Dropped: {trip.dropped_count}</div>
-    )}
+### 2. **نماذج الإدخال (Forms)**
+
+عند إضافة/تعديل مركبة:
+
+```jsx
+// React Example
+<div className="parking-location">
+  <h3>Parking Location</h3>
+  <Input
+    type="number"
+    name="home_latitude"
+    label="Latitude"
+    placeholder="e.g., 33.5731"
+    min={-90}
+    max={90}
+    step={0.000001}
+  />
+  <Input
+    type="number"
+    name="home_longitude"
+    label="Longitude"
+    placeholder="e.g., -7.5898"
+    min={-180}
+    max={180}
+    step={0.000001}
+  />
+  <Input
+    type="text"
+    name="home_address"
+    label="Address"
+    placeholder="Physical parking address"
+  />
 </div>
 ```
 
----
+### 3. **عرض المعلومات (Display)**
 
-## 🔄 API Endpoints المتأثرة
+في صفحة تفاصيل المركبة:
 
-### 1. `shuttle.trip` - Read
-
-**Response تغير**:
-- إضافة حقل `dropped_count` في الاستجابة
-
-```json
-{
-    "id": 1,
-    "trip_type": "dropoff",
-    "boarded_count": 0,
-    "dropped_count": 3,  // ⭐ جديد
-    ...
-}
+```jsx
+{vehicle.home_latitude && vehicle.home_longitude ? (
+  <div className="parking-info">
+    <Icon name="parking" />
+    <span>Parking: {vehicle.home_address || "GPS Location"}</span>
+    <small>
+      ({vehicle.home_latitude.toFixed(4)}, {vehicle.home_longitude.toFixed(4)})
+    </small>
+  </div>
+) : (
+  <div className="warning">
+    ⚠️ No parking location set for this vehicle
+  </div>
+)}
 ```
 
-### 2. `shuttle.trip.line` - Read
+---
 
-**Response لم يتغير**، لكن يجب استخدام `trip_type` من `trip_id` لتحديد الأزرار المناسبة.
+## ⚠️ ملاحظات مهمة (Important Notes)
+
+### 1. الحقول اختيارية (Optional)
+- جميع الحقول الثلاثة **اختيارية** (ليست مطلوبة)
+- يمكن للمركبة أن تعمل بدون تحديد موقف
+- ولكن **يُنصح بشدة** بإضافة الموقع لتحسين الدقة
+
+### 2. التوافق مع الإصدارات السابقة (Backward Compatibility)
+- ✅ المركبات الموجودة لن تتأثر
+- ✅ الحقول الجديدة ستكون `null` للمركبات القديمة
+- ✅ لا حاجة لـ migration script
+
+### 3. Validation
+- Latitude: يجب أن يكون بين -90 و +90
+- Longitude: يجب أن يكون بين -180 و +180
+- سيتم رفض القيم خارج هذا النطاق
 
 ---
 
-## ✅ Checklist للتنفيذ
+## 🧪 أمثلة للاختبار (Test Cases)
 
-- [ ] تحديث عرض الأزرار في قائمة الركاب (Tree View)
-- [ ] تحديث عرض الأزرار في تفاصيل الراكب (Form View)
-- [ ] تحديث عرض Passenger Statistics حسب `trip_type`
-- [ ] إضافة حقل `dropped_count` في API responses
-- [ ] تحديث الوثائق/التعليقات في الكود
-- [ ] اختبار الأزرار في رحلات Pickup
-- [ ] اختبار الأزرار في رحلات Dropoff
-- [ ] اختبار الإحصائيات في رحلات Pickup
-- [ ] اختبار الإحصائيات في رحلات Dropoff
+### Test Case 1: إضافة موقع صحيح
+```json
+{
+  "home_latitude": 33.5731,
+  "home_longitude": -7.5898,
+  "home_address": "Parking A"
+}
+// ✅ Expected: Success
+```
+
+### Test Case 2: قيم GPS غير صحيحة
+```json
+{
+  "home_latitude": 100.5,  // ❌ خارج النطاق
+  "home_longitude": -7.5898
+}
+// ❌ Expected: ValidationError
+```
+
+### Test Case 3: إحداثيات فقط بدون عنوان
+```json
+{
+  "home_latitude": 33.5731,
+  "home_longitude": -7.5898,
+  "home_address": null
+}
+// ✅ Expected: Success (العنوان اختياري)
+```
+
+### Test Case 4: عنوان فقط بدون GPS
+```json
+{
+  "home_latitude": null,
+  "home_longitude": null,
+  "home_address": "Parking A, Casablanca"
+}
+// ✅ Expected: Success (لكن لن يمكن حساب المسافات)
+```
 
 ---
 
-## 📞 للاستفسارات
+## 📦 Migration Guide
 
-إذا كان لديكم أي استفسارات حول هذه التحديثات، يرجى التواصل مع فريق Backend.
+### للمركبات الموجودة:
+
+لا حاجة لأي عمل فوري. يمكن إضافة المواقع تدريجياً:
+
+1. **Option 1: Manual Entry**
+   - يدخل المستخدمون المواقع يدوياً
+
+2. **Option 2: Bulk Import**
+   - تحضير ملف CSV:
+   ```csv
+   vehicle_id,home_latitude,home_longitude,home_address
+   1,33.5731,-7.5898,"Parking A, Casablanca"
+   2,33.5825,-7.6100,"Parking B, Casablanca"
+   ```
 
 ---
 
-**آخر تحديث**: 2025  
-**الإصدار**: 18.0.1.0.0
+## 🔮 الاستخدامات المستقبلية (Future Use)
 
+هذه البيانات ستُستخدم في:
+
+1. ✅ حساب المسافات الكلية
+2. ✅ تحسين المسارات (Route Optimization)
+3. ✅ تقدير استهلاك الوقود
+4. ✅ تحليل الأداء والكفاءة
+5. ✅ إشعارات تأخير السائق عن الموقف
+6. ✅ تتبع GPS والتحقق من موقع المركبة
+
+---
+
+## 📞 الدعم والتواصل
+
+إذا كان لديكم أي استفسارات أو احتياج لتوضيحات:
+
+- **Backend Team Lead:** [Your Name]
+- **Email:** backend@shuttlebee.com
+- **Slack:** #shuttlebee-dev
+
+---
+
+## ✅ Checklist للـ Frontend
+
+- [ ] قراءة والفهم الكامل للتحديث
+- [ ] تحديث API client للحقول الجديدة
+- [ ] إضافة حقول الإدخال في نموذج المركبة
+- [ ] إضافة validation للإحداثيات في Frontend
+- [ ] عرض موقع الموقف على الخريطة (إن وجدت)
+- [ ] تحديث الـ TypeScript interfaces/types
+- [ ] اختبار الـ CRUD operations
+- [ ] تحديث الوثائق الداخلية
+
+---
+
+**Happy Coding! 🚀**
+
+*ShuttleBee Backend Team*

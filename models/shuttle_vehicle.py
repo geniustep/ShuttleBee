@@ -35,6 +35,24 @@ class ShuttleVehicle(models.Model):
         string='Default Driver',
         tracking=True
     )
+    # Vehicle Home/Parking Location (Starting Point)
+    home_latitude = fields.Float(
+        string='Parking Latitude',
+        digits=(10, 7),
+        tracking=True,
+        help='GPS latitude of vehicle parking/home location (starting point for trips)'
+    )
+    home_longitude = fields.Float(
+        string='Parking Longitude',
+        digits=(10, 7),
+        tracking=True,
+        help='GPS longitude of vehicle parking/home location (starting point for trips)'
+    )
+    home_address = fields.Char(
+        string='Parking Address',
+        tracking=True,
+        help='Physical address of vehicle parking location'
+    )
     color = fields.Integer(string='Color Index')
     active = fields.Boolean(default=True)
     note = fields.Text(string='Notes', translate=True)
@@ -63,6 +81,15 @@ class ShuttleVehicle(models.Model):
         for vehicle in self:
             if vehicle.seat_capacity <= 0:
                 raise ValidationError(_('Seat capacity must be greater than zero.'))
+
+    @api.constrains('home_latitude', 'home_longitude')
+    def _check_home_coordinates(self):
+        """Validate vehicle home/parking GPS coordinates"""
+        for vehicle in self:
+            if vehicle.home_latitude and not (-90 <= vehicle.home_latitude <= 90):
+                raise ValidationError(_('Parking latitude must be between -90 and 90.'))
+            if vehicle.home_longitude and not (-180 <= vehicle.home_longitude <= 180):
+                raise ValidationError(_('Parking longitude must be between -180 and 180.'))
 
     @api.onchange('fleet_vehicle_id')
     def _onchange_fleet_vehicle_id(self):
