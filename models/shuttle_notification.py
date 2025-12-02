@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import re
 import requests
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+
+# Import helper utilities
+from ..helpers.validation import ValidationHelper
+from ..helpers.retry_utils import retry_with_backoff, RetryConfig
+from ..helpers.notification_providers import ProviderFactory
+from ..helpers.logging_utils import StructuredLogger, notification_logger
+from ..helpers.security_utils import template_renderer
+from ..helpers.rate_limiter import notification_rate_limiter
 
 _logger = logging.getLogger('shuttlebee.notification')
 
@@ -109,46 +116,6 @@ class ShuttleNotification(models.Model):
         readonly=True
     )
 
-    # Constraints
-    @api.constrains('recipient_phone', 'channel')
-    def _check_phone_required(self):
-        """Validate phone number for SMS/WhatsApp channels"""
-        for notification in self:
-            if notification.channel in ['sms', 'whatsapp']:
-                if not notification.recipient_phone:
-                    raise ValidationError(_('Phone number is required for %s notifications!') % notification.channel.upper())
-                if not self._is_valid_phone(notification.recipient_phone):
-                    raise ValidationError(_('Invalid phone number format: %s') % notification.recipient_phone)
-
-    @api.constrains('recipient_email', 'channel')
-    def _check_email_required(self):
-        """Validate email for email channel"""
-        for notification in self:
-            if notification.channel == 'email':
-                email = notification.recipient_email or (notification.passenger_id and notification.passenger_id.email)
-                if not email:
-                    raise ValidationError(_('Email address is required for email notifications!'))
-                if not self._is_valid_email(email):
-                    raise ValidationError(_('Invalid email format: %s') % email)
-
-    @api.model
-    def _is_valid_phone(self, phone):
-        """Validate phone number format (basic validation)"""
-        if not phone:
-            return False
-        # Remove common separators
-        phone_clean = re.sub(r'[\s\-\(\)\+]', '', phone)
-        # Check if it contains only digits and is reasonable length (7-15 digits)
-        return bool(re.match(r'^\d{7,15}$', phone_clean))
-
-    @api.model
-    def _is_valid_email(self, email):
-        """Validate email format"""
-        if not email:
-            return False
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        return bool(re.match(pattern, email))
-
     # Additional
     company_id = fields.Many2one(
         'res.company',
@@ -160,12 +127,50 @@ class ShuttleNotification(models.Model):
     )
     MAX_RETRIES = 3
 
+    # Constraints using new ValidationHelper
+    @api.constrains('recipient_phone', 'channel')
+    def _check_phone_required(self):
+        """Validate phone number for SMS/WhatsApp channels using ValidationHelper"""
+        for notification in self:
+            if notification.channel in ['sms', 'whatsapp']:
+                try:
+                    ValidationHelper.validate_contact_info(
+                        channel=notification.channel,
+                        phone=notification.recipient_phone,
+                        raise_error=True
+                    )
+                except ValidationError:
+                    # Re-raise with specific context
+                    raise
+
+    @api.constrains('recipient_email', 'channel')
+    def _check_email_required(self):
+        """Validate email for email channel using ValidationHelper"""
+        for notification in self:
+            if notification.channel == 'email':
+                email = notification.recipient_email or (
+                    notification.passenger_id and notification.passenger_id.email
+                )
+                try:
+                    ValidationHelper.validate_contact_info(
+                        channel='email',
+                        email=email,
+                        raise_error=True
+                    )
+                except ValidationError:
+                    raise
+
     # Methods
     def _compute_company(self):
         for rec in self:
-            rec.company_id = rec.trip_id.company_id or rec.passenger_id.company_id or rec.env.company
+            rec.company_id = (
+                rec.trip_id.company_id or
+                rec.passenger_id.company_id or
+                rec.env.company
+            )
 
     def _mark_sent(self, extra_vals=None):
+        """Mark notification as sent"""
         vals = {
             'status': 'sent',
             'sent_date': fields.Datetime.now(),
@@ -175,35 +180,66 @@ class ShuttleNotification(models.Model):
             vals.update(extra_vals)
         self.write(vals)
 
+        # Log success with structured logging
+        notification_logger.info(
+            'notification_sent',
+            notification_id=self.id,
+            channel=self.channel,
+            notification_type=self.notification_type,
+            passenger_id=self.passenger_id.id,
+            trip_id=self.trip_id.id if self.trip_id else None
+        )
+
     def _mark_failed(self, message):
+        """Mark notification as failed"""
         self.write({
             'status': 'failed',
             'error_message': message,
             'retry_count': self.retry_count + 1,
         })
 
+        # Log failure with structured logging
+        notification_logger.error(
+            'notification_failed',
+            notification_id=self.id,
+            channel=self.channel,
+            notification_type=self.notification_type,
+            error_message=message,
+            retry_count=self.retry_count + 1
+        )
+
     def _get_company_param(self, key, default=None):
+        """Get company-specific parameter"""
         company = self.company_id or self.env.company
-        return self.env['res.config.settings']._get_company_param(self.env, key, company, default)
+        return self.env['ir.config_parameter'].sudo().get_param(key, default)
 
     def _send_notification(self):
-        """Send the notification via the specified channel"""
+        """Send notification via specified channel with rate limiting and retries"""
         for notification in self:
             try:
-                # Validate recipient information before sending
-                if notification.channel in ['sms', 'whatsapp']:
-                    if not notification.recipient_phone:
-                        raise ValidationError(_('Phone number is required for %s notifications!') % notification.channel.upper())
-                    if not self._is_valid_phone(notification.recipient_phone):
-                        raise ValidationError(_('Invalid phone number format: %s') % notification.recipient_phone)
-                
-                elif notification.channel == 'email':
-                    email = notification.recipient_email or (notification.passenger_id and notification.passenger_id.email)
-                    if not email:
-                        raise ValidationError(_('Email address is required for email notifications!'))
-                    if not self._is_valid_email(email):
-                        raise ValidationError(_('Invalid email format: %s') % email)
+                # Validate contact information before sending
+                ValidationHelper.validate_contact_info(
+                    channel=notification.channel,
+                    phone=notification.recipient_phone,
+                    email=notification.recipient_email or (
+                        notification.passenger_id and notification.passenger_id.email
+                    ),
+                    raise_error=True
+                )
 
+                # Check rate limit
+                if not notification_rate_limiter.is_allowed(notification.channel):
+                    notification_logger.warning(
+                        'rate_limit_exceeded',
+                        notification_id=notification.id,
+                        channel=notification.channel
+                    )
+                    raise UserError(
+                        _('Rate limit exceeded for %s channel. Please try again later.') %
+                        notification.channel.upper()
+                    )
+
+                # Map channel to send method
                 channel_map = {
                     'sms': notification._send_sms,
                     'whatsapp': notification._send_whatsapp,
@@ -211,193 +247,218 @@ class ShuttleNotification(models.Model):
                     'email': notification._send_email,
                 }
                 send_method = channel_map.get(notification.channel)
+
                 if not send_method:
                     raise UserError(_('Unknown notification channel: %s') % notification.channel)
 
+                # Send with retry logic
                 response_vals = send_method() or {}
                 notification._mark_sent(response_vals)
-                _logger.info("Notification %s sent via %s", notification.id, notification.channel)
 
             except ValidationError:
                 raise
             except Exception as e:
                 error_msg = str(e)
                 notification._mark_failed(error_msg)
-                _logger.error(
-                    "Failed to send notification %s via %s: %s",
-                    notification.id,
-                    notification.channel,
-                    error_msg,
-                    exc_info=True
+                notification_logger.exception(
+                    'notification_send_error',
+                    notification_id=notification.id,
+                    channel=notification.channel,
+                    error=error_msg
                 )
 
         return True
 
+    @retry_with_backoff(
+        max_retries=3,
+        retry_on=(requests.exceptions.RequestException,),
+        ignore_on=(ValidationError, UserError)
+    )
     def _send_sms(self):
-        """Send SMS notification"""
+        """Send SMS notification using provider adapter with retry logic"""
         sms_api_url = self._get_company_param('shuttlebee.sms_api_url')
         sms_api_key = self._get_company_param('shuttlebee.sms_api_key')
+        provider_type = self._get_company_param('shuttlebee.sms_provider_type', 'generic_sms')
 
         if not sms_api_url or not sms_api_key:
-            _logger.warning(
-                f'SMS API not configured for notification {self.id}. '
-                'Please configure SMS API URL and Key in Settings.'
+            notification_logger.warning(
+                'sms_api_not_configured',
+                notification_id=self.id
             )
-            raise UserError(_('SMS API is not configured. Please configure it in Settings → ShuttleBee.'))
+            raise UserError(
+                _('SMS API is not configured. Please configure it in Settings → ShuttleBee.')
+            )
 
-        if not self.recipient_phone:
-            raise ValidationError(_('Recipient phone number is missing!'))
+        # Clean phone number
+        phone_clean = ValidationHelper.clean_phone(self.recipient_phone)
 
         try:
-            # Clean phone number
-            phone_clean = re.sub(r'[\s\-\(\)]', '', self.recipient_phone)
-            if phone_clean.startswith('+'):
-                phone_clean = phone_clean[1:]
-
-            # Prepare request payload (adjust based on your SMS provider API)
-            payload = {
-                'to': phone_clean,
-                'message': self.message_content,
-                'api_key': sms_api_key
-            }
-
-            # Send SMS via API (example implementation)
-            # Replace this with your actual SMS provider integration
-            response = requests.post(
-                sms_api_url,
-                json=payload,
-                headers={'Content-Type': 'application/json'},
+            # Create provider using factory
+            provider = ProviderFactory.create_provider(
+                provider_type=provider_type,
+                api_url=sms_api_url,
+                api_key=sms_api_key,
                 timeout=10
             )
-            response.raise_for_status()
+
+            # Send SMS
+            result = provider.send(
+                recipient=phone_clean,
+                message=self.message_content
+            )
 
             return {
-                'api_response': f'SMS sent successfully. Response: {response.text[:200]}',
-                'provider_message_id': response.headers.get('X-Message-Id'),
+                'api_response': result.get('api_response'),
+                'provider_message_id': result.get('provider_message_id'),
             }
 
-        except requests.exceptions.RequestException as e:
-            error_msg = f"SMS API request failed: {str(e)}"
-            raise UserError(_('Failed to send SMS: %s') % str(e))
-        except Exception as e:
-            error_msg = f"Unexpected error sending SMS: {str(e)}"
+        except UserError:
             raise
+        except Exception as e:
+            notification_logger.error(
+                'sms_send_failed',
+                notification_id=self.id,
+                phone=phone_clean,
+                error=str(e)
+            )
+            raise UserError(_('Failed to send SMS: %s') % str(e))
 
+    @retry_with_backoff(
+        max_retries=3,
+        retry_on=(requests.exceptions.RequestException,),
+        ignore_on=(ValidationError, UserError)
+    )
     def _send_whatsapp(self):
-        """Send WhatsApp notification via WhatsApp Business API"""
+        """Send WhatsApp notification using provider adapter with retry logic"""
         whatsapp_api_url = self._get_company_param('shuttlebee.whatsapp_api_url')
         whatsapp_api_key = self._get_company_param('shuttlebee.whatsapp_api_key')
+        provider_type = self._get_company_param('shuttlebee.whatsapp_provider_type', 'generic_whatsapp')
 
         if not whatsapp_api_url or not whatsapp_api_key:
-            _logger.warning(
-                f'WhatsApp API not configured for notification {self.id}. '
-                'Please configure WhatsApp API URL and Key in Settings.'
+            notification_logger.warning(
+                'whatsapp_api_not_configured',
+                notification_id=self.id
             )
-            raise UserError(_('WhatsApp API is not configured. Please configure it in Settings → ShuttleBee.'))
+            raise UserError(
+                _('WhatsApp API is not configured. Please configure it in Settings → ShuttleBee.')
+            )
 
-        if not self.recipient_phone:
-            raise ValidationError(_('Recipient phone number is missing!'))
+        # Clean phone number
+        phone_clean = ValidationHelper.clean_phone(self.recipient_phone)
 
         try:
-            # Clean phone number
-            phone_clean = re.sub(r'[\s\-\(\)]', '', self.recipient_phone)
-            if phone_clean.startswith('+'):
-                phone_clean = phone_clean[1:]
+            # Get additional config for WhatsApp Business API
+            phone_number_id = self._get_company_param('shuttlebee.whatsapp_phone_number_id')
 
-            # Prepare request payload (adjust based on your WhatsApp provider API)
-            payload = {
-                'to': phone_clean,
-                'message': self.message_content,
-                'api_key': whatsapp_api_key
-            }
-
-            # Send WhatsApp message via API (example implementation)
-            # Replace this with your actual WhatsApp provider integration
-            response = requests.post(
-                whatsapp_api_url,
-                json=payload,
-                headers={'Content-Type': 'application/json'},
+            # Create provider using factory
+            provider = ProviderFactory.create_provider(
+                provider_type=provider_type,
+                api_url=whatsapp_api_url,
+                api_key=whatsapp_api_key,
+                phone_number_id=phone_number_id,
                 timeout=10
             )
-            response.raise_for_status()
+
+            # Send WhatsApp
+            result = provider.send(
+                recipient=phone_clean,
+                message=self.message_content
+            )
 
             return {
-                'api_response': f'WhatsApp sent successfully. Response: {response.text[:200]}',
-                'provider_message_id': response.headers.get('X-Message-Id'),
+                'api_response': result.get('api_response'),
+                'provider_message_id': result.get('provider_message_id'),
             }
 
-        except requests.exceptions.RequestException as e:
-            error_msg = f"WhatsApp API request failed: {str(e)}"
-            raise UserError(_('Failed to send WhatsApp: %s') % str(e))
-        except Exception as e:
-            error_msg = f"Unexpected error sending WhatsApp: {str(e)}"
+        except UserError:
             raise
+        except Exception as e:
+            notification_logger.error(
+                'whatsapp_send_failed',
+                notification_id=self.id,
+                phone=phone_clean,
+                error=str(e)
+            )
+            raise UserError(_('Failed to send WhatsApp: %s') % str(e))
 
     def _send_push(self):
-        """Send push notification via Firebase Cloud Messaging or similar"""
+        """Send push notification via Firebase Cloud Messaging"""
         if not self.passenger_id:
             raise ValidationError(_('Passenger is required for push notifications!'))
 
-        # Check if passenger has push token (you may need to add this field to res.partner)
-        # For now, we'll log and mark as sent if no token is available
+        # Get push token from passenger
         push_token = getattr(self.passenger_id, 'push_notification_token', False)
-        
+
         if not push_token:
             raise UserError(_('Passenger does not have a push notification token.'))
 
+        fcm_api_url = self._get_company_param('shuttlebee.fcm_api_url', 'https://fcm.googleapis.com')
+        fcm_api_key = self._get_company_param('shuttlebee.fcm_api_key')
+
+        if not fcm_api_key:
+            notification_logger.warning(
+                'fcm_api_not_configured',
+                notification_id=self.id
+            )
+            raise UserError(
+                _('Firebase Cloud Messaging is not configured. Please configure it in Settings → ShuttleBee.')
+            )
+
         try:
-        # Integration with Firebase Cloud Messaging or similar
-            # Replace this with your actual push notification service integration
-            # Example FCM payload structure:
-            payload = {
-                'to': push_token,
-                'notification': {
-                    'title': 'ShuttleBee Notification',
-                    'body': self.message_content,
-                },
-                'data': {
-                    'trip_id': self.trip_id.id if self.trip_id else None,
-                    'notification_type': self.notification_type,
-                }
-            }
+            # Create FCM provider
+            provider = ProviderFactory.create_provider(
+                provider_type='firebase_push',
+                api_url=fcm_api_url,
+                api_key=fcm_api_key,
+                timeout=10
+            )
 
-            # Send push notification (implement based on your push service)
-            # For FCM, you would use the Firebase Admin SDK or REST API
-            _logger.info(f"Push notification prepared for passenger {self.passenger_id.id} in notification {self.id}")
-            
-            # Placeholder: Implement actual push sending logic here
-            # response = fcm_service.send(payload)
-            
+            # Send push notification
+            result = provider.send(
+                recipient=push_token,
+                message=self.message_content,
+                title='ShuttleBee Notification',
+                notification_type=self.notification_type,
+                trip_id=self.trip_id.id if self.trip_id else None
+            )
+
             return {
-                'api_response': 'Push notification sent successfully (implementation required)'
+                'api_response': result.get('api_response'),
+                'provider_message_id': result.get('provider_message_id'),
             }
 
+        except UserError:
+            raise
         except Exception as e:
-            error_msg = f"Unexpected error sending push notification: {str(e)}"
+            notification_logger.error(
+                'push_send_failed',
+                notification_id=self.id,
+                passenger_id=self.passenger_id.id,
+                error=str(e)
+            )
             raise UserError(_('Failed to send push notification: %s') % str(e))
 
     def _send_email(self):
         """Send email notification"""
         email = self.recipient_email or (self.passenger_id and self.passenger_id.email)
-        
+
         if not email:
             raise ValidationError(_('Email address is required for email notifications!'))
-        
-        if not self._is_valid_email(email):
-            raise ValidationError(_('Invalid email format: %s') % email)
+
+        ValidationHelper.validate_email(email, raise_error=True)
 
         try:
-            notification_type_label = dict(self._fields["notification_type"].selection).get(
-                self.notification_type, self.notification_type
-            )
-            
+            notification_type_label = dict(
+                self._fields["notification_type"].selection
+            ).get(self.notification_type, self.notification_type)
+
             mail_values = {
                 'subject': f'ShuttleBee: {notification_type_label}',
                 'body_html': self.message_content,
                 'email_to': email,
                 'auto_delete': True,
             }
-            
+
             # Add trip context if available
             if self.trip_id:
                 mail_values['model'] = 'shuttle.trip'
@@ -405,20 +466,34 @@ class ShuttleNotification(models.Model):
 
             mail = self.env['mail.mail'].create(mail_values)
             mail.send()
-            
+
+            notification_logger.info(
+                'email_sent',
+                notification_id=self.id,
+                email=email,
+                subject=mail_values['subject']
+            )
+
             return {
                 'api_response': f'Email sent successfully to {email}'
             }
 
         except Exception as e:
-            error_msg = f"Failed to send email: {str(e)}"
+            notification_logger.error(
+                'email_send_failed',
+                notification_id=self.id,
+                email=email,
+                error=str(e)
+            )
             raise UserError(_('Failed to send email: %s') % str(e))
 
     def action_retry(self):
         """Retry sending failed notification"""
         for rec in self:
             if rec.retry_count >= self.MAX_RETRIES:
-                raise UserError(_('Maximum retries exceeded for notification %s') % rec.display_name)
+                raise UserError(
+                    _('Maximum retries exceeded for notification %s') % rec.display_name
+                )
             rec.write({'status': 'pending', 'error_message': False})
             rec._send_notification()
         return True
@@ -466,3 +541,59 @@ class ShuttleNotification(models.Model):
                 'message_content': notif.message_content,
             })
         return result
+
+    @api.model
+    def webhook_delivery_status(self, provider_message_id, status, **kwargs):
+        """
+        Webhook receiver for delivery status updates from SMS/WhatsApp providers
+
+        Args:
+            provider_message_id: Provider's message ID
+            status: Delivery status (delivered, failed, read, etc.)
+            **kwargs: Additional provider-specific data
+
+        Returns:
+            Dict with success status
+        """
+        notification = self.search([
+            ('provider_message_id', '=', provider_message_id)
+        ], limit=1)
+
+        if not notification:
+            notification_logger.warning(
+                'webhook_notification_not_found',
+                provider_message_id=provider_message_id
+            )
+            return {'status': 'error', 'message': 'Notification not found'}
+
+        # Map provider status to our status
+        status_map = {
+            'delivered': 'delivered',
+            'read': 'read',
+            'failed': 'failed',
+            'sent': 'sent',
+        }
+
+        mapped_status = status_map.get(status.lower(), 'sent')
+
+        # Update notification status
+        vals = {'status': mapped_status}
+
+        if mapped_status == 'delivered':
+            vals['delivered_date'] = fields.Datetime.now()
+        elif mapped_status == 'read':
+            vals['read_date'] = fields.Datetime.now()
+        elif mapped_status == 'failed':
+            vals['error_message'] = kwargs.get('error_message', 'Delivery failed')
+
+        notification.write(vals)
+
+        notification_logger.info(
+            'webhook_status_updated',
+            notification_id=notification.id,
+            provider_message_id=provider_message_id,
+            old_status=notification.status,
+            new_status=mapped_status
+        )
+
+        return {'status': 'success', 'notification_id': notification.id}

@@ -1,0 +1,11 @@
+# ShuttleBee Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Phone number validation (optional but recommended)
+phonenumbers>=8.13.0
+
+# For Jinja2 template rendering (usually included with Odoo)
+jinja2>=3.0.0
+
+# HTTP requests (usually included with Odoo)
+requests>=2.28.0

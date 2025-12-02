@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# Import helpers first
+from .. import helpers
+
 from . import shuttle_trip
 from . import shuttle_trip_line
 from . import shuttle_stop
