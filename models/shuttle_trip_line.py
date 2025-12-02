@@ -355,6 +355,29 @@ class ShuttleTripLine(models.Model):
             })
         return self._service_response(updates)
 
+    def action_reset_to_planned(self):
+        """Reset passenger status back to planned"""
+        self._ensure_trip_state(['planned', 'ongoing'], _('reset passenger to planned'))
+        updates = []
+        for line in self:
+            previous_status = line.status
+            if previous_status != 'planned':
+                line.write({
+                    'status': 'planned',
+                    'boarding_time': False,
+                    'absence_reason': False,
+                })
+            line.trip_id.message_post(
+                body=_('Passenger %s status reset to planned.') % line.passenger_id.name
+            )
+            updates.append({
+                'trip_line_id': line.id,
+                'trip_id': line.trip_id.id,
+                'previous_status': previous_status,
+                'new_status': line.status,
+            })
+        return self._service_response(updates)
+
     def _get_notification_template_values(self):
         """Get values for message template rendering"""
         self.ensure_one()
