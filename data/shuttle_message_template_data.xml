@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Arabic Templates -->
+        
+        <!-- Approaching - Arabic -->
+        <record id="template_approaching_ar" model="shuttle.message.template">
+            <field name="name">إشعار اقتراب السائق (عربي)</field>
+            <field name="notification_type">approaching</field>
+            <field name="language">ar</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">مرحباً {passenger_name} 👋
+
+السائق {driver_name} يقترب من نقطة الالتقاط {stop_name}.
+
+🚐 المركبة: {vehicle_name}
+⏱️ الوقت المتوقع للوصول: {eta} دقائق
+
+يرجى التجهز للصعود.
+
+{company_name}
+📞 {company_phone}</field>
+        </record>
+
+        <!-- Arrived - Arabic -->
+        <record id="template_arrived_ar" model="shuttle.message.template">
+            <field name="name">إشعار وصول السائق (عربي)</field>
+            <field name="notification_type">arrived</field>
+            <field name="language">ar</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">مرحباً {passenger_name} 👋
+
+✅ السائق {driver_name} وصل إلى {stop_name}!
+
+🚐 المركبة: {vehicle_name} ({vehicle_plate})
+
+يرجى التوجه للمركبة فوراً.
+
+{company_name}</field>
+        </record>
+
+        <!-- Trip Started - Arabic -->
+        <record id="template_trip_started_ar" model="shuttle.message.template">
+            <field name="name">إشعار بدء الرحلة (عربي)</field>
+            <field name="notification_type">trip_started</field>
+            <field name="language">ar</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">مرحباً {passenger_name} 👋
+
+🚀 بدأت الرحلة {trip_name}!
+
+👨‍✈️ السائق: {driver_name}
+🚐 المركبة: {vehicle_name}
+📅 التاريخ: {trip_date}
+
+نتمنى لك رحلة آمنة!
+
+{company_name}</field>
+        </record>
+
+        <!-- Trip Cancelled - Arabic -->
+        <record id="template_cancelled_ar" model="shuttle.message.template">
+            <field name="name">إشعار إلغاء الرحلة (عربي)</field>
+            <field name="notification_type">cancelled</field>
+            <field name="language">ar</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">مرحباً {passenger_name} 👋
+
+⚠️ تم إلغاء الرحلة {trip_name}
+
+📅 التاريخ: {trip_date}
+
+نعتذر عن أي إزعاج. يرجى التواصل معنا للمزيد من المعلومات.
+
+{company_name}
+📞 {company_phone}</field>
+        </record>
+
+        <!-- Reminder - Arabic -->
+        <record id="template_reminder_ar" model="shuttle.message.template">
+            <field name="name">تذكير بالرحلة (عربي)</field>
+            <field name="notification_type">reminder</field>
+            <field name="language">ar</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">مرحباً {passenger_name} 👋
+
+🔔 تذكير: لديك رحلة قادمة!
+
+📅 التاريخ: {trip_date}
+⏰ الوقت: {trip_time}
+📍 نقطة الالتقاط: {stop_name}
+👨‍✈️ السائق: {driver_name}
+
+يرجى التجهز في الوقت المحدد.
+
+{company_name}</field>
+        </record>
+
+        <!-- English Templates -->
+        
+        <!-- Approaching - English -->
+        <record id="template_approaching_en" model="shuttle.message.template">
+            <field name="name">Approaching Notification (English)</field>
+            <field name="notification_type">approaching</field>
+            <field name="language">en</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">Hello {passenger_name} 👋
+
+Driver {driver_name} is approaching pickup point {stop_name}.
+
+🚐 Vehicle: {vehicle_name}
+⏱️ ETA: {eta} minutes
+
+Please be ready for boarding.
+
+{company_name}
+📞 {company_phone}</field>
+        </record>
+
+        <!-- Arrived - English -->
+        <record id="template_arrived_en" model="shuttle.message.template">
+            <field name="name">Arrived Notification (English)</field>
+            <field name="notification_type">arrived</field>
+            <field name="language">en</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">Hello {passenger_name} 👋
+
+✅ Driver {driver_name} has arrived at {stop_name}!
+
+🚐 Vehicle: {vehicle_name} ({vehicle_plate})
+
+Please head to the vehicle immediately.
+
+{company_name}</field>
+        </record>
+
+        <!-- Trip Started - English -->
+        <record id="template_trip_started_en" model="shuttle.message.template">
+            <field name="name">Trip Started Notification (English)</field>
+            <field name="notification_type">trip_started</field>
+            <field name="language">en</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">Hello {passenger_name} 👋
+
+🚀 Trip {trip_name} has started!
+
+👨‍✈️ Driver: {driver_name}
+🚐 Vehicle: {vehicle_name}
+📅 Date: {trip_date}
+
+Have a safe trip!
+
+{company_name}</field>
+        </record>
+
+        <!-- Trip Cancelled - English -->
+        <record id="template_cancelled_en" model="shuttle.message.template">
+            <field name="name">Trip Cancelled Notification (English)</field>
+            <field name="notification_type">cancelled</field>
+            <field name="language">en</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">Hello {passenger_name} 👋
+
+⚠️ Trip {trip_name} has been cancelled.
+
+📅 Date: {trip_date}
+
+We apologize for any inconvenience. Please contact us for more information.
+
+{company_name}
+📞 {company_phone}</field>
+        </record>
+
+        <!-- French Templates -->
+        
+        <!-- Approaching - French -->
+        <record id="template_approaching_fr" model="shuttle.message.template">
+            <field name="name">Notification d'approche (Français)</field>
+            <field name="notification_type">approaching</field>
+            <field name="language">fr</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">Bonjour {passenger_name} 👋
+
+Le chauffeur {driver_name} approche du point de ramassage {stop_name}.
+
+🚐 Véhicule: {vehicle_name}
+⏱️ Arrivée estimée: {eta} minutes
+
+Merci de vous préparer.
+
+{company_name}
+📞 {company_phone}</field>
+        </record>
+
+        <!-- Arrived - French -->
+        <record id="template_arrived_fr" model="shuttle.message.template">
+            <field name="name">Notification d'arrivée (Français)</field>
+            <field name="notification_type">arrived</field>
+            <field name="language">fr</field>
+            <field name="channel">all</field>
+            <field name="is_default">True</field>
+            <field name="is_active">True</field>
+            <field name="body">Bonjour {passenger_name} 👋
+
+✅ Le chauffeur {driver_name} est arrivé à {stop_name}!
+
+🚐 Véhicule: {vehicle_name} ({vehicle_plate})
+
+Merci de rejoindre le véhicule immédiatement.
+
+{company_name}</field>
+        </record>
+
+    </data>
+</odoo>
+

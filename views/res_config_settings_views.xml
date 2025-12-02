@@ -40,14 +40,70 @@
                                 <field name="shuttlebee_sms_api_key" password="True"/>
                             </div>
                         </setting>
-                        <setting string="WhatsApp Settings">
+                    </block>
+
+                    <block title="WhatsApp / WAHA Settings" name="whatsapp_settings">
+                        <setting string="WhatsApp Provider">
+                            <div class="text-muted mb-2">
+                                Select the WhatsApp API provider to use
+                            </div>
+                            <field name="shuttlebee_whatsapp_provider_type"/>
+                        </setting>
+                        <setting string="WhatsApp API Configuration">
                             <div class="mt-2">
                                 <label for="shuttlebee_whatsapp_api_url" string="API URL"/>
-                                <field name="shuttlebee_whatsapp_api_url" placeholder="https://api.whatsapp.com"/>
+                                <field name="shuttlebee_whatsapp_api_url" 
+                                       placeholder="http://localhost:3000"
+                                       class="w-100"/>
+                                <div class="text-muted mt-1">
+                                    For WAHA: http://your-server:3000
+                                </div>
                             </div>
                             <div class="mt-2">
                                 <label for="shuttlebee_whatsapp_api_key" string="API Key"/>
-                                <field name="shuttlebee_whatsapp_api_key" password="True"/>
+                                <field name="shuttlebee_whatsapp_api_key" password="True" class="w-100"/>
+                            </div>
+                        </setting>
+                        <setting string="WAHA Session Settings" 
+                                 invisible="shuttlebee_whatsapp_provider_type != 'waha_whatsapp'">
+                            <div class="mt-2">
+                                <label for="shuttlebee_waha_session" string="Session Name"/>
+                                <field name="shuttlebee_waha_session" placeholder="default"/>
+                            </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_waha_webhook_url" string="Webhook URL"/>
+                                <field name="shuttlebee_waha_webhook_url" 
+                                       placeholder="https://your-odoo.com/shuttlebee/webhook/waha"
+                                       class="w-100"/>
+                            </div>
+                            <div class="mt-2">
+                                <span class="o_form_label">Session Status</span>
+                                <field name="shuttlebee_waha_session_status" readonly="1"/>
+                            </div>
+                        </setting>
+                        <setting string="WAHA Actions" 
+                                 invisible="shuttlebee_whatsapp_provider_type != 'waha_whatsapp'">
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                <button name="action_waha_test_connection" 
+                                        type="object" 
+                                        string="🔌 Test Connection" 
+                                        class="btn btn-secondary"/>
+                                <button name="action_waha_create_session" 
+                                        type="object" 
+                                        string="➕ Create Session" 
+                                        class="btn btn-primary"/>
+                                <button name="action_waha_start_session" 
+                                        type="object" 
+                                        string="▶️ Start Session" 
+                                        class="btn btn-success"/>
+                                <button name="action_waha_stop_session" 
+                                        type="object" 
+                                        string="⏹️ Stop Session" 
+                                        class="btn btn-warning"/>
+                                <button name="action_waha_get_qr_code" 
+                                        type="object" 
+                                        string="📱 Get QR Code" 
+                                        class="btn btn-info"/>
                             </div>
                         </setting>
                     </block>

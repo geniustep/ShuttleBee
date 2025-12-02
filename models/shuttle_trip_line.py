@@ -256,11 +256,15 @@ class ShuttleTripLine(models.Model):
         return True
 
     def action_mark_boarded(self):
-        """Mark passenger as boarded"""
+        """Mark passenger as boarded, and mark all other passengers who are not absent as boarded"""
         self._ensure_trip_state(['ongoing'], _('mark passenger as boarded'))
         updates = []
+        trip = None
         
         for line in self:
+            if not trip:
+                trip = line.trip_id
+            
             previous_status = line.status
             if previous_status != 'boarded':
                 line.write({
@@ -277,6 +281,29 @@ class ShuttleTripLine(models.Model):
                 'previous_status': previous_status,
                 'new_status': line.status,
             })
+        
+        # Mark all other passengers who are not absent as boarded
+        if trip:
+            marked_count = 0
+            for line in trip.line_ids:
+                if line.id not in self.ids and line.status != 'absent' and line.status != 'boarded':
+                    previous_status = line.status
+                    line.write({
+                        'status': 'boarded',
+                        'boarding_time': fields.Datetime.now() if not line.boarding_time else line.boarding_time,
+                    })
+                    updates.append({
+                        'trip_line_id': line.id,
+                        'trip_id': line.trip_id.id,
+                        'previous_status': previous_status,
+                        'new_status': line.status,
+                    })
+                    marked_count += 1
+            
+            if marked_count > 0:
+                trip.message_post(
+                    body=_('Automatically marked %s other passenger(s) as boarded.') % marked_count
+                )
         
         return self._service_response(updates)
 
@@ -328,56 +355,83 @@ class ShuttleTripLine(models.Model):
             })
         return self._service_response(updates)
 
-    def action_reset_to_planned(self):
-        """Reset passenger status to planned (initial state)"""
-        self._ensure_trip_state(['planned', 'ongoing'], _('reset passenger to planned'))
-        updates = []
-        for line in self:
-            previous_status = line.status
-            if previous_status != 'planned':
-                line.write({
-                    'status': 'planned',
-                    'boarding_time': False,
-                    'absence_reason': False,
-                    'approaching_notified': False,
-                    'arrived_notified': False,
-                })
-            line.trip_id.message_post(
-                body=_('Passenger %s status reset to planned.') % line.passenger_id.name
-            )
-            updates.append({
-                'trip_line_id': line.id,
-                'trip_id': line.trip_id.id,
-                'previous_status': previous_status,
-                'new_status': line.status,
-            })
-        return self._service_response(updates)
+    def _get_notification_template_values(self):
+        """Get values for message template rendering"""
+        self.ensure_one()
+        trip = self.trip_id
+        passenger = self.passenger_id
+        driver = trip.driver_id
+        vehicle = trip.vehicle_id
+        company = trip.company_id or self.env.company
+        
+        # Format trip time from planned_start_time
+        trip_time = ''
+        if trip.planned_start_time:
+            trip_time = trip.planned_start_time.strftime('%H:%M')
+        
+        return {
+            'passenger_name': passenger.name or '',
+            'driver_name': driver.name if driver else '',
+            'vehicle_name': vehicle.name if vehicle else '',
+            'vehicle_plate': vehicle.license_plate if vehicle else '',
+            'stop_name': self.pickup_stop_id.name if self.pickup_stop_id else _('your location'),
+            'trip_name': trip.name or '',
+            'trip_date': str(trip.date) if trip.date else '',
+            'trip_time': trip_time,
+            'eta': '10',
+            'company_name': company.name or '',
+            'company_phone': company.phone or '',
+        }
 
     def action_send_approaching_notification(self):
-        """Send approaching notification"""
+        """Send approaching notification using customizable templates"""
+        MessageTemplate = self.env['shuttle.message.template']
+        
         for line in self:
-            # Get template
-            template = self.env.ref('shuttlebee.mail_template_approaching', raise_if_not_found=False)
-
-            # Prepare message content
-            pickup_location = line.pickup_stop_id.name if line.pickup_stop_id else _('your location')
-            message_content = _(
-                'Hello %s, Driver %s is approaching pickup point %s. ETA: 10 minutes.'
-            ) % (
-                line.passenger_id.name,
-                line.driver_id.name,
-                pickup_location
+            # Get default notification channel from settings
+            default_channel = self.env['ir.config_parameter'].sudo().get_param(
+                'shuttlebee.notification_channel', 'whatsapp'
             )
+            
+            # Get passenger language preference (default to Arabic)
+            language = getattr(line.passenger_id, 'lang', 'ar_001') or 'ar'
+            if language.startswith('ar'):
+                language = 'ar'
+            elif language.startswith('en'):
+                language = 'en'
+            elif language.startswith('fr'):
+                language = 'fr'
+            else:
+                language = 'ar'
+            
+            # Get template
+            template = MessageTemplate.get_template(
+                notification_type='approaching',
+                channel=default_channel,
+                language=language,
+                company=line.trip_id.company_id
+            )
+            
+            # Prepare template values
+            values = line._get_notification_template_values()
+            
+            # Render message
+            if template:
+                message_content = template.render_message(values)
+            else:
+                # Fallback message
+                message_content = _(
+                    'Hello %s, Driver %s is approaching pickup point %s. ETA: 10 minutes.'
+                ) % (values['passenger_name'], values['driver_name'], values['stop_name'])
 
             self.env['shuttle.notification'].create({
                 'trip_id': line.trip_id.id,
                 'trip_line_id': line.id,
                 'passenger_id': line.passenger_id.id,
                 'notification_type': 'approaching',
-                'channel': 'sms',
+                'channel': default_channel,
                 'message_content': message_content,
                 'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
-                'template_id': template.id if template else False,
             })._send_notification()
 
             line.write({
@@ -387,30 +441,54 @@ class ShuttleTripLine(models.Model):
         return True
 
     def action_send_arrived_notification(self):
-        """Send arrived notification"""
+        """Send arrived notification using customizable templates"""
+        MessageTemplate = self.env['shuttle.message.template']
+        
         for line in self:
-            # Get template
-            template = self.env.ref('shuttlebee.mail_template_arrived', raise_if_not_found=False)
-
-            # Prepare message content
-            pickup_location = line.pickup_stop_id.name if line.pickup_stop_id else _('your location')
-            message_content = _(
-                'Dear %s, Driver %s has arrived at %s. Please head to the shuttle immediately!'
-            ) % (
-                line.passenger_id.name,
-                line.driver_id.name,
-                pickup_location
+            # Get default notification channel from settings
+            default_channel = self.env['ir.config_parameter'].sudo().get_param(
+                'shuttlebee.notification_channel', 'whatsapp'
             )
+            
+            # Get passenger language preference
+            language = getattr(line.passenger_id, 'lang', 'ar_001') or 'ar'
+            if language.startswith('ar'):
+                language = 'ar'
+            elif language.startswith('en'):
+                language = 'en'
+            elif language.startswith('fr'):
+                language = 'fr'
+            else:
+                language = 'ar'
+            
+            # Get template
+            template = MessageTemplate.get_template(
+                notification_type='arrived',
+                channel=default_channel,
+                language=language,
+                company=line.trip_id.company_id
+            )
+            
+            # Prepare template values
+            values = line._get_notification_template_values()
+            
+            # Render message
+            if template:
+                message_content = template.render_message(values)
+            else:
+                # Fallback message
+                message_content = _(
+                    'Dear %s, Driver %s has arrived at %s. Please head to the shuttle immediately!'
+                ) % (values['passenger_name'], values['driver_name'], values['stop_name'])
 
             self.env['shuttle.notification'].create({
                 'trip_id': line.trip_id.id,
                 'trip_line_id': line.id,
                 'passenger_id': line.passenger_id.id,
                 'notification_type': 'arrived',
-                'channel': 'sms',
+                'channel': default_channel,
                 'message_content': message_content,
                 'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
-                'template_id': template.id if template else False,
             })._send_notification()
 
             line.write({
@@ -429,53 +507,18 @@ class ShuttleTripLine(models.Model):
                 lambda l: l.passenger_id.id == self.passenger_id.id
             )
             if group_line:
-                group_line_record = group_line[0]
-                self.group_line_id = group_line_record
+                self.group_line_id = group_line[0]
                 # Use stops from group line if available
-                if group_line_record.pickup_stop_id:
-                    self.pickup_stop_id = group_line_record.pickup_stop_id
+                if group_line[0].pickup_stop_id:
+                    self.pickup_stop_id = group_line[0].pickup_stop_id
                     self.pickup_latitude = False
                     self.pickup_longitude = False
-                if group_line_record.dropoff_stop_id:
-                    self.dropoff_stop_id = group_line_record.dropoff_stop_id
+                if group_line[0].dropoff_stop_id:
+                    self.dropoff_stop_id = group_line[0].dropoff_stop_id
                     self.dropoff_latitude = False
                     self.dropoff_longitude = False
-                # Load seat_count from group line
-                if group_line_record.seat_count:
-                    self.seat_count = group_line_record.seat_count
-                # Load notes from group line
-                if group_line_record.notes:
-                    self.notes = group_line_record.notes
-                # Load sequence from group line
-                if group_line_record.sequence:
-                    self.sequence = group_line_record.sequence
-                # If no pickup stop in group line, apply passenger defaults for pickup GPS coordinates
-                if not group_line_record.pickup_stop_id:
-                    passenger = self.passenger_id
-                    if passenger.use_gps_for_pickup and passenger.shuttle_latitude and passenger.shuttle_longitude:
-                        self.pickup_stop_id = False
-                        self.pickup_latitude = passenger.shuttle_latitude
-                        self.pickup_longitude = passenger.shuttle_longitude
-                    elif passenger.shuttle_latitude and passenger.shuttle_longitude:
-                        self.pickup_stop_id = False
-                        self.pickup_latitude = passenger.shuttle_latitude
-                        self.pickup_longitude = passenger.shuttle_longitude
-                # If no dropoff stop in group line, apply passenger defaults for dropoff GPS coordinates
-                if not group_line_record.dropoff_stop_id:
-                    passenger = self.passenger_id
-                    company = self.trip_id.company_id if self.trip_id else self.env.company
-                    if passenger.use_gps_for_dropoff and company and company.shuttle_latitude and company.shuttle_longitude:
-                        self.dropoff_stop_id = False
-                        self.dropoff_latitude = company.shuttle_latitude
-                        self.dropoff_longitude = company.shuttle_longitude
-                    elif company and company.shuttle_latitude and company.shuttle_longitude:
-                        self.dropoff_stop_id = False
-                        self.dropoff_latitude = company.shuttle_latitude
-                        self.dropoff_longitude = company.shuttle_longitude
-                    elif passenger.shuttle_latitude and passenger.shuttle_longitude:
-                        self.dropoff_stop_id = False
-                        self.dropoff_latitude = passenger.shuttle_latitude
-                        self.dropoff_longitude = passenger.shuttle_longitude
+                if group_line[0].seat_count:
+                    self.seat_count = group_line[0].seat_count
             else:
                 # If passenger not in group, use defaults from passenger
                 self._apply_passenger_defaults()

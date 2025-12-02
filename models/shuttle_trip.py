@@ -5,6 +5,10 @@ from datetime import datetime, timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 
+# Import helper utilities
+from ..helpers.conflict_detector import ConflictDetector
+from ..helpers.logging_utils import trip_logger
+
 _logger = logging.getLogger('shuttlebee.trip')
 
 
@@ -273,109 +277,39 @@ class ShuttleTrip(models.Model):
 
     @api.constrains('vehicle_id', 'driver_id', 'planned_start_time', 'planned_arrival_time', 'date', 'state')
     def _check_vehicle_and_driver_conflict(self):
-        """Prevent vehicle and driver conflicts: same vehicle/driver cannot be used in overlapping trips"""
+        """
+        Prevent vehicle and driver conflicts using optimized ConflictDetector
+        This replaces the old N+1 query approach with database-level conflict detection
+        """
+        conflict_detector = ConflictDetector(self)
+
         for trip in self:
-            # Only check cancelled trips if they are being reactivated
+            # Skip cancelled trips
             if trip.state == 'cancelled':
                 continue
-            
-            # Check for overlapping trips (including draft trips)
+
+            # Skip if no start time
             if not trip.planned_start_time:
                 continue
-            
-            # Ensure datetime objects
-            start_time = fields.Datetime.to_datetime(trip.planned_start_time) if trip.planned_start_time else False
-            if not start_time:
-                continue
-            end_time = fields.Datetime.to_datetime(trip.planned_arrival_time) if trip.planned_arrival_time else (start_time + timedelta(hours=2))  # Default 2 hours if no arrival time
-            
-            # Check vehicle conflict (check against all trips except cancelled ones)
-            if trip.vehicle_id:
-                vehicle_domain = [
-                    ('id', '!=', trip.id),
-                    ('vehicle_id', '=', trip.vehicle_id.id),
-                    ('state', '!=', 'cancelled'),  # Include draft, planned, ongoing, done
-                    ('date', '=', trip.date),
-                    ('planned_start_time', '!=', False),  # Must have start time
-                ]
-                
-                conflicting_trips = self.search(vehicle_domain)
-                for conflict in conflicting_trips:
-                    # Ensure datetime objects
-                    conflict_start = fields.Datetime.to_datetime(conflict.planned_start_time) if conflict.planned_start_time else False
-                    if not conflict_start:
-                        continue
-                    conflict_end = fields.Datetime.to_datetime(conflict.planned_arrival_time) if conflict.planned_arrival_time else (conflict_start + timedelta(hours=2))
-                    
-                    # Ensure start_time and end_time are datetime objects
-                    start_dt = fields.Datetime.to_datetime(start_time) if start_time else False
-                    end_dt = fields.Datetime.to_datetime(end_time) if end_time else False
-                    if not start_dt or not end_dt:
-                        continue
-                    
-                    # Check if time ranges overlap
-                    if start_dt < conflict_end and end_dt > conflict_start:
-                        raise ValidationError(_(
-                            'Vehicle conflict detected!\n\n'
-                            'Vehicle "%s" is already assigned to another trip:\n'
-                            '• Trip: %s\n'
-                            '• Time: %s - %s\n'
-                            '• Group: %s\n'
-                            '• Status: %s\n\n'
-                            'Please choose a different vehicle or adjust the trip time.'
-                        ) % (
-                            trip.vehicle_id.name,
-                            conflict.name,
-                            conflict_start.strftime('%Y-%m-%d %H:%M'),
-                            conflict_end.strftime('%H:%M'),
-                            conflict.group_id.name if conflict.group_id else _('N/A'),
-                            dict(conflict._fields['state'].selection).get(conflict.state, conflict.state)
-                        ))
-            
-            # Check driver conflict (check against all trips except cancelled ones)
-            if trip.driver_id:
-                driver_domain = [
-                    ('id', '!=', trip.id),
-                    ('driver_id', '=', trip.driver_id.id),
-                    ('state', '!=', 'cancelled'),  # Include draft, planned, ongoing, done
-                    ('date', '=', trip.date),
-                    ('planned_start_time', '!=', False),  # Must have start time
-                ]
-                
-                conflicting_trips = self.search(driver_domain)
-                for conflict in conflicting_trips:
-                    # Ensure datetime objects
-                    conflict_start = fields.Datetime.to_datetime(conflict.planned_start_time) if conflict.planned_start_time else False
-                    if not conflict_start:
-                        continue
-                    conflict_end = fields.Datetime.to_datetime(conflict.planned_arrival_time) if conflict.planned_arrival_time else (conflict_start + timedelta(hours=2))
-                    
-                    # Ensure start_time and end_time are datetime objects
-                    start_dt = fields.Datetime.to_datetime(start_time) if start_time else False
-                    end_dt = fields.Datetime.to_datetime(end_time) if end_time else False
-                    if not start_dt or not end_dt:
-                        continue
-                    
-                    # Check if time ranges overlap
-                    if start_dt < conflict_end and end_dt > conflict_start:
-                        raise ValidationError(_(
-                            'Driver conflict detected!\n\n'
-                            'Driver "%s" is already assigned to another trip:\n'
-                            '• Trip: %s\n'
-                            '• Time: %s - %s\n'
-                            '• Group: %s\n'
-                            '• Vehicle: %s\n'
-                            '• Status: %s\n\n'
-                            'Please choose a different driver or adjust the trip time.'
-                        ) % (
-                            trip.driver_id.name,
-                            conflict.name,
-                            conflict_start.strftime('%Y-%m-%d %H:%M'),
-                            conflict_end.strftime('%H:%M'),
-                            conflict.group_id.name if conflict.group_id else _('N/A'),
-                            conflict.vehicle_id.name if conflict.vehicle_id else _('N/A'),
-                            dict(conflict._fields['state'].selection).get(conflict.state, conflict.state)
-                        ))
+
+            # Use optimized conflict detector
+            try:
+                conflict_detector.validate_trip_conflicts(
+                    trip_record=trip,
+                    check_vehicle=bool(trip.vehicle_id),
+                    check_driver=bool(trip.driver_id)
+                )
+            except ValidationError:
+                # Log conflict with structured logging
+                trip_logger.warning(
+                    'trip_conflict_detected',
+                    trip_id=trip.id,
+                    vehicle_id=trip.vehicle_id.id if trip.vehicle_id else None,
+                    driver_id=trip.driver_id.id if trip.driver_id else None,
+                    date=str(trip.date),
+                    start_time=str(trip.planned_start_time)
+                )
+                raise
 
     # Computed Methods
     @api.depends('line_ids.seat_count')
@@ -671,9 +605,41 @@ class ShuttleTrip(models.Model):
             'context': {'default_trip_id': self.id}
         }
 
+    def _get_notification_template_values(self, line):
+        """Get values for message template rendering"""
+        passenger = line.passenger_id
+        driver = self.driver_id
+        vehicle = self.vehicle_id
+        company = self.company_id or self.env.company
+        
+        # Format trip time from planned_start_time
+        trip_time = ''
+        if self.planned_start_time:
+            trip_time = self.planned_start_time.strftime('%H:%M')
+        
+        return {
+            'passenger_name': passenger.name or '',
+            'driver_name': driver.name if driver else '',
+            'vehicle_name': vehicle.name if vehicle else '',
+            'vehicle_plate': vehicle.license_plate if vehicle else '',
+            'stop_name': line.pickup_stop_id.name if line.pickup_stop_id else _('your location'),
+            'trip_name': self.name or '',
+            'trip_date': str(self.date) if self.date else '',
+            'trip_time': trip_time,
+            'eta': '10',
+            'company_name': company.name or '',
+            'company_phone': company.phone or '',
+        }
+
     def _send_trip_started_notifications(self):
         """Send notifications when trip starts and return summary"""
         Notification = self.env['shuttle.notification']
+        MessageTemplate = self.env['shuttle.message.template']
+        
+        # Get default notification channel from settings
+        default_channel = self.env['ir.config_parameter'].sudo().get_param(
+            'shuttlebee.notification_channel', 'whatsapp'
+        )
         summaries = {}
         for trip in self:
             data = {
@@ -687,17 +653,45 @@ class ShuttleTrip(models.Model):
             data['lines_processed'] = len(planned_lines)
             for line in planned_lines:
                 try:
+                    # Get passenger language preference
+                    language = getattr(line.passenger_id, 'lang', 'ar_001') or 'ar'
+                    if language.startswith('ar'):
+                        language = 'ar'
+                    elif language.startswith('en'):
+                        language = 'en'
+                    elif language.startswith('fr'):
+                        language = 'fr'
+                    else:
+                        language = 'ar'
+                    
+                    # Get template
+                    template = MessageTemplate.get_template(
+                        notification_type='trip_started',
+                        channel=default_channel,
+                        language=language,
+                        company=trip.company_id
+                    )
+                    
+                    # Prepare template values
+                    values = trip._get_notification_template_values(line)
+                    
+                    # Render message
+                    if template:
+                        message_content = template.render_message(values)
+                    else:
+                        message_content = _('Trip %s has started. Driver: %s') % (
+                            trip.name, trip.driver_id.name
+                        )
+                    
                     Notification.create({
-                    'trip_id': trip.id,
-                    'trip_line_id': line.id,
-                    'passenger_id': line.passenger_id.id,
-                    'notification_type': 'trip_started',
-                    'channel': 'sms',
-                    'message_content': _('Trip %s has started. Driver: %s') % (
-                        trip.name, trip.driver_id.name
-                    ),
-                    'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
-                })._send_notification()
+                        'trip_id': trip.id,
+                        'trip_line_id': line.id,
+                        'passenger_id': line.passenger_id.id,
+                        'notification_type': 'trip_started',
+                        'channel': default_channel,
+                        'message_content': message_content,
+                        'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
+                    })._send_notification()
                     data['sent'] += 1
                 except Exception as error:
                     data['failed'] += 1
@@ -717,6 +711,12 @@ class ShuttleTrip(models.Model):
     def _send_cancellation_notifications(self):
         """Send cancellation notifications to all passengers and return summary"""
         Notification = self.env['shuttle.notification']
+        MessageTemplate = self.env['shuttle.message.template']
+        
+        # Get default notification channel from settings
+        default_channel = self.env['ir.config_parameter'].sudo().get_param(
+            'shuttlebee.notification_channel', 'whatsapp'
+        )
         summaries = {}
         for trip in self:
             data = {
@@ -728,15 +728,43 @@ class ShuttleTrip(models.Model):
             }
             for line in trip.line_ids:
                 try:
+                    # Get passenger language preference
+                    language = getattr(line.passenger_id, 'lang', 'ar_001') or 'ar'
+                    if language.startswith('ar'):
+                        language = 'ar'
+                    elif language.startswith('en'):
+                        language = 'en'
+                    elif language.startswith('fr'):
+                        language = 'fr'
+                    else:
+                        language = 'ar'
+                    
+                    # Get template
+                    template = MessageTemplate.get_template(
+                        notification_type='cancelled',
+                        channel=default_channel,
+                        language=language,
+                        company=trip.company_id
+                    )
+                    
+                    # Prepare template values
+                    values = trip._get_notification_template_values(line)
+                    
+                    # Render message
+                    if template:
+                        message_content = template.render_message(values)
+                    else:
+                        message_content = _('Trip %s has been cancelled.') % trip.name
+                    
                     Notification.create({
-                    'trip_id': trip.id,
-                    'trip_line_id': line.id,
-                    'passenger_id': line.passenger_id.id,
-                    'notification_type': 'cancelled',
-                    'channel': 'sms',
-                    'message_content': _('Trip %s has been cancelled.') % trip.name,
-                    'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
-                })._send_notification()
+                        'trip_id': trip.id,
+                        'trip_line_id': line.id,
+                        'passenger_id': line.passenger_id.id,
+                        'notification_type': 'cancelled',
+                        'channel': default_channel,
+                        'message_content': message_content,
+                        'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
+                    })._send_notification()
                     data['sent'] += 1
                 except Exception as error:
                     data['failed'] += 1

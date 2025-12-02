@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- 
+        WAHA Default Configuration
+        These are placeholder values - update them in Settings → ShuttleBee
+        
+        Your WAHA Credentials:
+        =====================
+        WAHA_API_KEY: fd6b206c281d437cb0314adabef6aae2
+        WAHA_DASHBOARD_USERNAME: admin
+        WAHA_DASHBOARD_PASSWORD: f5820a80e4a4493ca06eed44908cb3e6
+        
+        Configure these in Odoo Settings → ShuttleBee → WhatsApp Settings
+        -->
+        
+        <!-- Set default WhatsApp provider to WAHA -->
+        <record id="shuttlebee_whatsapp_provider_type" model="ir.config_parameter">
+            <field name="key">shuttlebee.whatsapp_provider_type</field>
+            <field name="value">waha_whatsapp</field>
+        </record>
+        
+        <!-- Default WAHA session name -->
+        <record id="shuttlebee_waha_session" model="ir.config_parameter">
+            <field name="key">shuttlebee.waha_session</field>
+            <field name="value">default</field>
+        </record>
+    </data>
+</odoo>
+

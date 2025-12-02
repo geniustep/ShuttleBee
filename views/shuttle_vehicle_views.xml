@@ -59,7 +59,7 @@
                             </div>
                         </page>
                         <page string="Notes" name="notes">
-                            <field name="note" placeholder="Notes / requirements..."/>
+                    <field name="note" placeholder="Notes / requirements..."/>
                         </page>
                     </notebook>
                 </sheet>
