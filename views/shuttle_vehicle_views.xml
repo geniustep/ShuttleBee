@@ -41,7 +41,27 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Parking Location" name="parking_location">
+                            <group>
+                                <group string="GPS Coordinates">
+                                    <field name="home_latitude" placeholder="e.g., 33.5731"/>
+                                    <field name="home_longitude" placeholder="e.g., -7.5898"/>
+                                </group>
+                                <group string="Address">
+                                    <field name="home_address" placeholder="Physical parking address"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-info" role="alert">
+                                <strong>ℹ️ Vehicle Parking Location:</strong><br/>
+                                This is the fixed location where the vehicle is parked when not in use.<br/>
+                                It will be used as the starting point for trip planning and distance calculations.
+                            </div>
+                        </page>
+                        <page string="Notes" name="notes">
                     <field name="note" placeholder="Notes / requirements..."/>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>

@@ -42,6 +42,10 @@ Version 2.0.0 Improvements:
 * Centralized validation utilities
 * Improved phone number validation
 * Secure template rendering to prevent injection attacks
+* WAHA (WhatsApp HTTP API) Integration for self-hosted WhatsApp
+* Send text, images, files, locations via WhatsApp
+* Session management with QR code authentication
+* Real-time webhook support for message delivery status
 
     """,
     'author': 'Your Company',
@@ -71,6 +75,8 @@ Version 2.0.0 Improvements:
         'data/ir_sequence_data.xml',
         'data/mail_template_data.xml',
         'data/ir_cron_data.xml',
+        'data/waha_config_data.xml',
+        'data/shuttle_message_template_data.xml',
 
         # Views
         'views/shuttle_trip_views.xml',
@@ -83,8 +89,10 @@ Version 2.0.0 Improvements:
         'views/res_company_views.xml',
         'views/res_users_views.xml',
         'views/shuttle_notification_views.xml',
+        'views/shuttle_message_template_views.xml',
         'views/res_config_settings_views.xml',
         'views/shuttle_trip_wizard_views.xml',
+        'views/shuttle_waha_qr_wizard_views.xml',
         'views/shuttle_menus.xml',
 
         # Reports

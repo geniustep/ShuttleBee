@@ -17,3 +17,4 @@ from . import shuttle_vehicle
 from . import shuttle_config_helper
 from . import shuttle_gps_position
 from . import res_company
+from . import shuttle_message_template

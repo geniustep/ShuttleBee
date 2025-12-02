@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- WAHA QR Code Wizard Form View -->
+    <record id="shuttle_waha_qr_wizard_form" model="ir.ui.view">
+        <field name="name">shuttle.waha.qr.wizard.form</field>
+        <field name="model">shuttle.waha.qr.wizard</field>
+        <field name="arch" type="xml">
+            <form string="WAHA QR Code">
+                <sheet>
+                    <div class="oe_title text-center">
+                        <h1 style="color: #25D366;">
+                            <i class="fa fa-whatsapp" title="WhatsApp"/> WhatsApp QR Code
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="session_status" readonly="True"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <field name="instructions" readonly="True" nolabel="True"/>
+                    </group>
+                    
+                    <group string="QR Code Link">
+                        <field name="qr_code_url" widget="url" readonly="True"/>
+                        <field name="api_key" invisible="True"/>
+                    </group>
+                    
+                    <div class="alert alert-info mt-4" role="alert">
+                        <strong>نصيحة:</strong>
+                        <ul class="mb-0">
+                            <li>اضغط على الرابط أعلاه لفتح QR Code في نافذة جديدة</li>
+                            <li>تأكد من اتصال هاتفك بالإنترنت</li>
+                            <li>QR Code يتجدد كل 30 ثانية</li>
+                            <li>بعد المسح، انتظر حتى يتغير الحالة إلى "متصل"</li>
+                        </ul>
+                    </div>
+                </sheet>
+                
+                <footer>
+                    <button name="action_refresh_qr" 
+                            type="object" 
+                            string="تحديث QR Code" 
+                            class="btn btn-primary"/>
+                    <button name="action_check_status" 
+                            type="object" 
+                            string="تحقق من الحالة" 
+                            class="btn btn-secondary"/>
+                    <button string="إغلاق" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open WAHA QR Wizard -->
+    <record id="action_shuttle_waha_qr_wizard" model="ir.actions.act_window">
+        <field name="name">WAHA QR Code</field>
+        <field name="res_model">shuttle.waha.qr.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

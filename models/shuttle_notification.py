@@ -332,7 +332,7 @@ class ShuttleNotification(models.Model):
         """Send WhatsApp notification using provider adapter with retry logic"""
         whatsapp_api_url = self._get_company_param('shuttlebee.whatsapp_api_url')
         whatsapp_api_key = self._get_company_param('shuttlebee.whatsapp_api_key')
-        provider_type = self._get_company_param('shuttlebee.whatsapp_provider_type', 'generic_whatsapp')
+        provider_type = self._get_company_param('shuttlebee.whatsapp_provider_type', 'waha_whatsapp')
 
         if not whatsapp_api_url or not whatsapp_api_key:
             notification_logger.warning(
@@ -347,22 +347,39 @@ class ShuttleNotification(models.Model):
         phone_clean = ValidationHelper.clean_phone(self.recipient_phone)
 
         try:
-            # Get additional config for WhatsApp Business API
-            phone_number_id = self._get_company_param('shuttlebee.whatsapp_phone_number_id')
+            # Get provider-specific configuration
+            extra_config = {}
+            
+            if provider_type == 'waha_whatsapp':
+                # WAHA specific configuration
+                waha_session = self._get_company_param('shuttlebee.waha_session', 'default')
+                extra_config['session'] = waha_session
+                extra_config['timeout'] = 30
+            elif provider_type == 'whatsapp_business':
+                # WhatsApp Business API configuration
+                phone_number_id = self._get_company_param('shuttlebee.whatsapp_phone_number_id')
+                extra_config['phone_number_id'] = phone_number_id
 
             # Create provider using factory
             provider = ProviderFactory.create_provider(
                 provider_type=provider_type,
                 api_url=whatsapp_api_url,
                 api_key=whatsapp_api_key,
-                phone_number_id=phone_number_id,
-                timeout=10
+                **extra_config
             )
 
             # Send WhatsApp
             result = provider.send(
                 recipient=phone_clean,
                 message=self.message_content
+            )
+
+            notification_logger.info(
+                'whatsapp_sent',
+                notification_id=self.id,
+                phone=phone_clean,
+                provider=provider_type,
+                message_id=result.get('provider_message_id')
             )
 
             return {
@@ -377,9 +394,106 @@ class ShuttleNotification(models.Model):
                 'whatsapp_send_failed',
                 notification_id=self.id,
                 phone=phone_clean,
+                provider=provider_type,
                 error=str(e)
             )
             raise UserError(_('Failed to send WhatsApp: %s') % str(e))
+
+    def action_send_whatsapp_image(self, image_url, caption=''):
+        """
+        Send WhatsApp image message (WAHA specific feature)
+        
+        Args:
+            image_url: URL of the image to send
+            caption: Optional caption for the image
+        """
+        self.ensure_one()
+        
+        provider_type = self._get_company_param('shuttlebee.whatsapp_provider_type', 'waha_whatsapp')
+        
+        if provider_type != 'waha_whatsapp':
+            raise UserError(_('Image sending is only supported with WAHA provider'))
+        
+        whatsapp_api_url = self._get_company_param('shuttlebee.whatsapp_api_url')
+        whatsapp_api_key = self._get_company_param('shuttlebee.whatsapp_api_key')
+        waha_session = self._get_company_param('shuttlebee.waha_session', 'default')
+        
+        phone_clean = ValidationHelper.clean_phone(self.recipient_phone)
+        
+        try:
+            provider = ProviderFactory.create_provider(
+                provider_type='waha_whatsapp',
+                api_url=whatsapp_api_url,
+                api_key=whatsapp_api_key,
+                session=waha_session
+            )
+            
+            result = provider.send_image(
+                recipient=phone_clean,
+                image_url=image_url,
+                caption=caption
+            )
+            
+            self._mark_sent({
+                'api_response': result.get('api_response'),
+                'provider_message_id': result.get('provider_message_id'),
+            })
+            
+            return result
+            
+        except Exception as e:
+            self._mark_failed(str(e))
+            raise UserError(_('Failed to send WhatsApp image: %s') % str(e))
+
+    def action_send_whatsapp_location(self, latitude, longitude, name='', address=''):
+        """
+        Send WhatsApp location message (WAHA specific feature)
+        
+        Args:
+            latitude: Location latitude
+            longitude: Location longitude
+            name: Optional location name
+            address: Optional address
+        """
+        self.ensure_one()
+        
+        provider_type = self._get_company_param('shuttlebee.whatsapp_provider_type', 'waha_whatsapp')
+        
+        if provider_type != 'waha_whatsapp':
+            raise UserError(_('Location sending is only supported with WAHA provider'))
+        
+        whatsapp_api_url = self._get_company_param('shuttlebee.whatsapp_api_url')
+        whatsapp_api_key = self._get_company_param('shuttlebee.whatsapp_api_key')
+        waha_session = self._get_company_param('shuttlebee.waha_session', 'default')
+        
+        phone_clean = ValidationHelper.clean_phone(self.recipient_phone)
+        
+        try:
+            provider = ProviderFactory.create_provider(
+                provider_type='waha_whatsapp',
+                api_url=whatsapp_api_url,
+                api_key=whatsapp_api_key,
+                session=waha_session
+            )
+            
+            result = provider.send_location(
+                recipient=phone_clean,
+                latitude=latitude,
+                longitude=longitude,
+                name=name,
+                address=address
+            )
+            
+            self._mark_sent({
+                'api_response': result.get('api_response'),
+                'provider_message_id': result.get('provider_message_id'),
+            })
+            
+            return result
+            
+        except Exception as e:
+            self._mark_failed(str(e))
+            raise UserError(_('Failed to send WhatsApp location: %s') % str(e))
 
     def _send_push(self):
         """Send push notification via Firebase Cloud Messaging"""

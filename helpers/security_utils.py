@@ -5,7 +5,7 @@ Security utilities for credential management and safe template rendering
 
 import logging
 import base64
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 from jinja2 import Template, Environment, StrictUndefined, select_autoescape
 from jinja2.exceptions import TemplateError
 from odoo.exceptions import UserError

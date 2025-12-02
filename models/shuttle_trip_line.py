@@ -355,31 +355,83 @@ class ShuttleTripLine(models.Model):
             })
         return self._service_response(updates)
 
-    def action_send_approaching_notification(self):
-        """Send approaching notification"""
-        for line in self:
-            # Get template
-            template = self.env.ref('shuttlebee.mail_template_approaching', raise_if_not_found=False)
+    def _get_notification_template_values(self):
+        """Get values for message template rendering"""
+        self.ensure_one()
+        trip = self.trip_id
+        passenger = self.passenger_id
+        driver = trip.driver_id
+        vehicle = trip.vehicle_id
+        company = trip.company_id or self.env.company
+        
+        # Format trip time from planned_start_time
+        trip_time = ''
+        if trip.planned_start_time:
+            trip_time = trip.planned_start_time.strftime('%H:%M')
+        
+        return {
+            'passenger_name': passenger.name or '',
+            'driver_name': driver.name if driver else '',
+            'vehicle_name': vehicle.name if vehicle else '',
+            'vehicle_plate': vehicle.license_plate if vehicle else '',
+            'stop_name': self.pickup_stop_id.name if self.pickup_stop_id else _('your location'),
+            'trip_name': trip.name or '',
+            'trip_date': str(trip.date) if trip.date else '',
+            'trip_time': trip_time,
+            'eta': '10',
+            'company_name': company.name or '',
+            'company_phone': company.phone or '',
+        }
 
-            # Prepare message content
-            pickup_location = line.pickup_stop_id.name if line.pickup_stop_id else _('your location')
-            message_content = _(
-                'Hello %s, Driver %s is approaching pickup point %s. ETA: 10 minutes.'
-            ) % (
-                line.passenger_id.name,
-                line.driver_id.name,
-                pickup_location
+    def action_send_approaching_notification(self):
+        """Send approaching notification using customizable templates"""
+        MessageTemplate = self.env['shuttle.message.template']
+        
+        for line in self:
+            # Get default notification channel from settings
+            default_channel = self.env['ir.config_parameter'].sudo().get_param(
+                'shuttlebee.notification_channel', 'whatsapp'
             )
+            
+            # Get passenger language preference (default to Arabic)
+            language = getattr(line.passenger_id, 'lang', 'ar_001') or 'ar'
+            if language.startswith('ar'):
+                language = 'ar'
+            elif language.startswith('en'):
+                language = 'en'
+            elif language.startswith('fr'):
+                language = 'fr'
+            else:
+                language = 'ar'
+            
+            # Get template
+            template = MessageTemplate.get_template(
+                notification_type='approaching',
+                channel=default_channel,
+                language=language,
+                company=line.trip_id.company_id
+            )
+            
+            # Prepare template values
+            values = line._get_notification_template_values()
+            
+            # Render message
+            if template:
+                message_content = template.render_message(values)
+            else:
+                # Fallback message
+                message_content = _(
+                    'Hello %s, Driver %s is approaching pickup point %s. ETA: 10 minutes.'
+                ) % (values['passenger_name'], values['driver_name'], values['stop_name'])
 
             self.env['shuttle.notification'].create({
                 'trip_id': line.trip_id.id,
                 'trip_line_id': line.id,
                 'passenger_id': line.passenger_id.id,
                 'notification_type': 'approaching',
-                'channel': 'sms',
+                'channel': default_channel,
                 'message_content': message_content,
                 'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
-                'template_id': template.id if template else False,
             })._send_notification()
 
             line.write({
@@ -389,30 +441,54 @@ class ShuttleTripLine(models.Model):
         return True
 
     def action_send_arrived_notification(self):
-        """Send arrived notification"""
+        """Send arrived notification using customizable templates"""
+        MessageTemplate = self.env['shuttle.message.template']
+        
         for line in self:
-            # Get template
-            template = self.env.ref('shuttlebee.mail_template_arrived', raise_if_not_found=False)
-
-            # Prepare message content
-            pickup_location = line.pickup_stop_id.name if line.pickup_stop_id else _('your location')
-            message_content = _(
-                'Dear %s, Driver %s has arrived at %s. Please head to the shuttle immediately!'
-            ) % (
-                line.passenger_id.name,
-                line.driver_id.name,
-                pickup_location
+            # Get default notification channel from settings
+            default_channel = self.env['ir.config_parameter'].sudo().get_param(
+                'shuttlebee.notification_channel', 'whatsapp'
             )
+            
+            # Get passenger language preference
+            language = getattr(line.passenger_id, 'lang', 'ar_001') or 'ar'
+            if language.startswith('ar'):
+                language = 'ar'
+            elif language.startswith('en'):
+                language = 'en'
+            elif language.startswith('fr'):
+                language = 'fr'
+            else:
+                language = 'ar'
+            
+            # Get template
+            template = MessageTemplate.get_template(
+                notification_type='arrived',
+                channel=default_channel,
+                language=language,
+                company=line.trip_id.company_id
+            )
+            
+            # Prepare template values
+            values = line._get_notification_template_values()
+            
+            # Render message
+            if template:
+                message_content = template.render_message(values)
+            else:
+                # Fallback message
+                message_content = _(
+                    'Dear %s, Driver %s has arrived at %s. Please head to the shuttle immediately!'
+                ) % (values['passenger_name'], values['driver_name'], values['stop_name'])
 
             self.env['shuttle.notification'].create({
                 'trip_id': line.trip_id.id,
                 'trip_line_id': line.id,
                 'passenger_id': line.passenger_id.id,
                 'notification_type': 'arrived',
-                'channel': 'sms',
+                'channel': default_channel,
                 'message_content': message_content,
                 'recipient_phone': line.passenger_id.phone or line.passenger_id.mobile,
-                'template_id': template.id if template else False,
             })._send_notification()
 
             line.write({

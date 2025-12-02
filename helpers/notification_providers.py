@@ -241,6 +241,394 @@ class GenericWhatsAppProvider(NotificationProvider):
             raise UserError(_('Failed to send WhatsApp: %s') % str(e))
 
 
+class WAHAWhatsAppProvider(NotificationProvider):
+    """
+    WAHA (WhatsApp HTTP API) Provider
+    Documentation: https://waha.devlike.pro/docs/overview/introduction/
+    
+    WAHA is a self-hosted WhatsApp API that provides endpoints for:
+    - Session management (create, start, stop, QR code)
+    - Sending messages (text, image, file, voice, video, location)
+    - Receiving webhooks for incoming messages and status updates
+    """
+
+    def __init__(self, api_url: str, api_key: str, **config):
+        """
+        Initialize WAHA provider
+        
+        Args:
+            api_url: WAHA API base URL (e.g., http://localhost:3000)
+            api_key: WAHA API key for authentication
+            **config: Additional configuration:
+                - session: Session name (default: 'default')
+                - timeout: Request timeout in seconds (default: 30)
+        """
+        super().__init__(api_url, api_key, **config)
+        self.session = config.get('session', 'default')
+        self.timeout = config.get('timeout', 30)
+
+    def _get_headers(self) -> Dict[str, str]:
+        """Get common headers for WAHA API requests"""
+        return {
+            'Content-Type': 'application/json',
+            'X-Api-Key': self.api_key,
+        }
+
+    def _format_phone_number(self, phone: str) -> str:
+        """
+        Format phone number for WAHA API (chatId format)
+        WAHA expects: {phone}@c.us for individual chats
+        
+        Args:
+            phone: Phone number (can include + or country code)
+            
+        Returns:
+            Formatted chatId for WAHA
+        """
+        # Remove all non-digit characters
+        clean_phone = ''.join(filter(str.isdigit, phone))
+        # WAHA format: phone@c.us
+        return f"{clean_phone}@c.us"
+
+    def format_payload(self, recipient: str, message: str, **kwargs) -> Dict[str, Any]:
+        """
+        Format payload for WAHA sendText endpoint
+        
+        Args:
+            recipient: Phone number
+            message: Text message content
+            **kwargs: Additional options (reply_to, mentions, etc.)
+            
+        Returns:
+            Formatted payload for WAHA API
+        """
+        chat_id = self._format_phone_number(recipient)
+        
+        payload = {
+            'chatId': chat_id,
+            'text': message,
+            'session': self.session,
+        }
+        
+        # Optional: reply to a specific message
+        if kwargs.get('reply_to'):
+            payload['reply_to'] = kwargs['reply_to']
+            
+        # Optional: link preview
+        if kwargs.get('link_preview', True):
+            payload['linkPreview'] = True
+            
+        return payload
+
+    def send(self, recipient: str, message: str, **kwargs) -> Dict[str, Any]:
+        """
+        Send text message via WAHA API
+        
+        Endpoint: POST /api/sendText
+        
+        Args:
+            recipient: Phone number
+            message: Text message
+            **kwargs: Additional options
+            
+        Returns:
+            Dict with provider_message_id and api_response
+        """
+        self.validate_config()
+        
+        payload = self.format_payload(recipient, message, **kwargs)
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/sendText",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # WAHA returns message ID in the response
+            message_id = data.get('id') or data.get('key', {}).get('id')
+            
+            return {
+                'provider_message_id': message_id,
+                'api_response': f'WAHA: Message sent successfully. ID: {message_id}',
+                'raw_response': data,
+            }
+            
+        except requests.exceptions.HTTPError as e:
+            error_msg = str(e)
+            try:
+                error_data = e.response.json()
+                error_msg = error_data.get('message', str(e))
+            except:
+                pass
+            raise UserError(_('WAHA API Error: %s') % error_msg)
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Failed to send WhatsApp via WAHA: %s') % str(e))
+
+    def send_image(self, recipient: str, image_url: str, caption: str = '', **kwargs) -> Dict[str, Any]:
+        """
+        Send image via WAHA API
+        
+        Endpoint: POST /api/sendImage
+        
+        Args:
+            recipient: Phone number
+            image_url: URL of the image to send
+            caption: Optional caption for the image
+            **kwargs: Additional options
+            
+        Returns:
+            Dict with provider_message_id and api_response
+        """
+        self.validate_config()
+        
+        chat_id = self._format_phone_number(recipient)
+        
+        payload = {
+            'chatId': chat_id,
+            'file': {
+                'url': image_url,
+            },
+            'caption': caption,
+            'session': self.session,
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/sendImage",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            message_id = data.get('id') or data.get('key', {}).get('id')
+            
+            return {
+                'provider_message_id': message_id,
+                'api_response': f'WAHA: Image sent successfully. ID: {message_id}',
+                'raw_response': data,
+            }
+            
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Failed to send image via WAHA: %s') % str(e))
+
+    def send_file(self, recipient: str, file_url: str, filename: str = '', caption: str = '', **kwargs) -> Dict[str, Any]:
+        """
+        Send file via WAHA API
+        
+        Endpoint: POST /api/sendFile
+        
+        Args:
+            recipient: Phone number
+            file_url: URL of the file to send
+            filename: Optional filename
+            caption: Optional caption
+            **kwargs: Additional options
+            
+        Returns:
+            Dict with provider_message_id and api_response
+        """
+        self.validate_config()
+        
+        chat_id = self._format_phone_number(recipient)
+        
+        payload = {
+            'chatId': chat_id,
+            'file': {
+                'url': file_url,
+            },
+            'session': self.session,
+        }
+        
+        if filename:
+            payload['file']['filename'] = filename
+        if caption:
+            payload['caption'] = caption
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/sendFile",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            message_id = data.get('id') or data.get('key', {}).get('id')
+            
+            return {
+                'provider_message_id': message_id,
+                'api_response': f'WAHA: File sent successfully. ID: {message_id}',
+                'raw_response': data,
+            }
+            
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Failed to send file via WAHA: %s') % str(e))
+
+    def send_location(self, recipient: str, latitude: float, longitude: float, name: str = '', address: str = '', **kwargs) -> Dict[str, Any]:
+        """
+        Send location via WAHA API
+        
+        Endpoint: POST /api/sendLocation
+        
+        Args:
+            recipient: Phone number
+            latitude: Location latitude
+            longitude: Location longitude
+            name: Optional location name
+            address: Optional location address
+            **kwargs: Additional options
+            
+        Returns:
+            Dict with provider_message_id and api_response
+        """
+        self.validate_config()
+        
+        chat_id = self._format_phone_number(recipient)
+        
+        payload = {
+            'chatId': chat_id,
+            'latitude': latitude,
+            'longitude': longitude,
+            'session': self.session,
+        }
+        
+        if name:
+            payload['name'] = name
+        if address:
+            payload['address'] = address
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/sendLocation",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            message_id = data.get('id') or data.get('key', {}).get('id')
+            
+            return {
+                'provider_message_id': message_id,
+                'api_response': f'WAHA: Location sent successfully. ID: {message_id}',
+                'raw_response': data,
+            }
+            
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Failed to send location via WAHA: %s') % str(e))
+
+    def send_seen(self, chat_id: str, message_id: str, **kwargs) -> Dict[str, Any]:
+        """
+        Mark message as seen/read
+        
+        Endpoint: POST /api/sendSeen
+        
+        Args:
+            chat_id: Chat ID
+            message_id: Message ID to mark as seen
+            **kwargs: Additional options
+            
+        Returns:
+            Dict with api_response
+        """
+        self.validate_config()
+        
+        payload = {
+            'chatId': chat_id,
+            'messageId': message_id,
+            'session': self.session,
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/sendSeen",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            return {
+                'api_response': 'WAHA: Message marked as seen',
+            }
+            
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Failed to send seen status via WAHA: %s') % str(e))
+
+    def start_typing(self, recipient: str, **kwargs) -> Dict[str, Any]:
+        """
+        Start typing indicator
+        
+        Endpoint: POST /api/startTyping
+        """
+        self.validate_config()
+        
+        chat_id = self._format_phone_number(recipient)
+        
+        payload = {
+            'chatId': chat_id,
+            'session': self.session,
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/startTyping",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            return {
+                'api_response': 'WAHA: Typing started',
+            }
+            
+        except requests.exceptions.RequestException as e:
+            _logger.warning(f'Failed to start typing: {e}')
+            return {'api_response': f'Warning: {e}'}
+
+    def stop_typing(self, recipient: str, **kwargs) -> Dict[str, Any]:
+        """
+        Stop typing indicator
+        
+        Endpoint: POST /api/stopTyping
+        """
+        self.validate_config()
+        
+        chat_id = self._format_phone_number(recipient)
+        
+        payload = {
+            'chatId': chat_id,
+            'session': self.session,
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/stopTyping",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            return {
+                'api_response': 'WAHA: Typing stopped',
+            }
+            
+        except requests.exceptions.RequestException as e:
+            _logger.warning(f'Failed to stop typing: {e}')
+            return {'api_response': f'Warning: {e}'}
+
+
 class FirebasePushProvider(NotificationProvider):
     """Firebase Cloud Messaging (FCM) provider for push notifications"""
 
@@ -301,6 +689,7 @@ class ProviderFactory:
         'generic_sms': GenericSMSProvider,
         'whatsapp_business': WhatsAppBusinessProvider,
         'generic_whatsapp': GenericWhatsAppProvider,
+        'waha_whatsapp': WAHAWhatsAppProvider,
         'firebase_push': FirebasePushProvider,
     }
 
