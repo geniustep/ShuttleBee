@@ -23,6 +23,7 @@
                     <group>
                         <group string="Passenger Info">
                             <field name="is_shuttle_passenger"/>
+                            <field name="is_auto_notification" invisible="not is_shuttle_passenger"/>
                             <field name="shuttle_trip_direction" invisible="not is_shuttle_passenger"/>
                         </group>
                         <group string="Statistics" invisible="not is_shuttle_passenger">

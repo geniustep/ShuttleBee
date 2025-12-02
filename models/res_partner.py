@@ -14,7 +14,12 @@ class ResPartner(models.Model):
         string='Is Shuttle Passenger',
         default=False
     )
-
+    # Auto Notification Info
+    is_auto_notification = fields.Boolean(
+        string='Auto Notification',
+        default=True
+    )
+    
     # Default Stops
     use_gps_for_pickup = fields.Boolean(
         string='Use GPS Coordinates for Pickup',
