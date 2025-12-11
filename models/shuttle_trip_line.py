@@ -256,15 +256,11 @@ class ShuttleTripLine(models.Model):
         return True
 
     def action_mark_boarded(self):
-        """Mark passenger as boarded, and mark all other passengers who are not absent as boarded"""
+        """Mark passenger as boarded"""
         self._ensure_trip_state(['ongoing'], _('mark passenger as boarded'))
         updates = []
-        trip = None
         
         for line in self:
-            if not trip:
-                trip = line.trip_id
-            
             previous_status = line.status
             if previous_status != 'boarded':
                 line.write({
@@ -282,28 +278,39 @@ class ShuttleTripLine(models.Model):
                 'new_status': line.status,
             })
         
-        # Mark all other passengers who are not absent as boarded
-        if trip:
-            marked_count = 0
-            for line in trip.line_ids:
-                if line.id not in self.ids and line.status != 'absent' and line.status != 'boarded':
-                    previous_status = line.status
-                    line.write({
-                        'status': 'boarded',
-                        'boarding_time': fields.Datetime.now() if not line.boarding_time else line.boarding_time,
-                    })
-                    updates.append({
-                        'trip_line_id': line.id,
-                        'trip_id': line.trip_id.id,
-                        'previous_status': previous_status,
-                        'new_status': line.status,
-                    })
-                    marked_count += 1
-            
-            if marked_count > 0:
-                trip.message_post(
-                    body=_('Automatically marked %s other passenger(s) as boarded.') % marked_count
-                )
+        return self._service_response(updates)
+    
+    def action_mark_all_boarded(self):
+        """Mark all passengers in the trip as boarded (except absent ones)"""
+        self._ensure_trip_state(['ongoing'], _('mark all passengers as boarded'))
+        updates = []
+        
+        # Get the trip from the first line
+        if not self:
+            return self._service_response(updates)
+        
+        trip = self[0].trip_id
+        marked_count = 0
+        
+        for line in trip.line_ids:
+            if line.status != 'absent' and line.status != 'boarded':
+                previous_status = line.status
+                line.write({
+                    'status': 'boarded',
+                    'boarding_time': fields.Datetime.now() if not line.boarding_time else line.boarding_time,
+                })
+                updates.append({
+                    'trip_line_id': line.id,
+                    'trip_id': line.trip_id.id,
+                    'previous_status': previous_status,
+                    'new_status': line.status,
+                })
+                marked_count += 1
+        
+        if marked_count > 0:
+            trip.message_post(
+                body=_('Marked %s passenger(s) as boarded.') % marked_count
+            )
         
         return self._service_response(updates)
 

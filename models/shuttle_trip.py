@@ -1703,15 +1703,21 @@ class ShuttleTrip(models.Model):
 
     @api.model
     def _cron_mark_absent_passengers(self):
-        """Auto-mark passengers as absent if they haven't boarded"""
+        """Auto-mark passengers as absent if they haven't boarded after timeout
+        
+        NOTE: This is disabled by default (timeout=0). 
+        Set 'shuttlebee.absent_timeout' parameter to enable (in minutes).
+        Recommended: 60 minutes or more for real-world usage.
+        """
         try:
             IrConfigParam = self.env['ir.config_parameter'].sudo()
             absent_timeout = int(IrConfigParam.get_param(
-                'shuttlebee.absent_timeout', 5))
+                'shuttlebee.absent_timeout', 0))  # Disabled by default (was 5)
 
             if absent_timeout <= 0:
-                _logger.warning('Absent timeout is set to invalid value: %s. Using default 5.', absent_timeout)
-                absent_timeout = 5
+                # Disabled - do nothing
+                _logger.debug('Auto-mark absent is disabled (timeout=%s)', absent_timeout)
+                return True
 
             now = fields.Datetime.now()
             timeout_time = now - timedelta(minutes=absent_timeout)
