@@ -115,12 +115,13 @@ class ShuttleStop(models.Model):
             result.append((stop.id, name))
         return result
 
-    @api.model
-    def create(self, vals):
+    @api.model_create_multi
+    def create(self, vals_list):
         """Generate code if not provided"""
-        if not vals.get('code'):
-            vals['code'] = self.env['ir.sequence'].next_by_code('shuttle.stop') or 'STOP'
-        return super().create(vals)
+        for vals in vals_list:
+            if not vals.get('code'):
+                vals['code'] = self.env['ir.sequence'].next_by_code('shuttle.stop') or 'STOP'
+        return super().create(vals_list)
 
     def action_view_usage(self):
         """View trips using this stop"""

@@ -64,10 +64,11 @@ class ShuttleGpsPosition(models.Model):
          'Latitude must be between -90 and 90, and longitude between -180 and 180.')
     ]
 
-    @api.model
-    def create(self, vals):
-        self._validate_coordinates(vals.get('latitude'), vals.get('longitude'))
-        return super().create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._validate_coordinates(vals.get('latitude'), vals.get('longitude'))
+        return super().create(vals_list)
 
     def write(self, vals):
         if 'latitude' in vals or 'longitude' in vals:

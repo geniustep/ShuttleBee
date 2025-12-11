@@ -5,14 +5,16 @@ from pytz import timezone as pytz_timezone, UTC
 from odoo import api, fields, models, _
 
 
+# Use plain strings at module level to avoid translation warnings
+# The _() function will be called at runtime in selection fields
 WEEKDAY_SELECTION = [
-    ('monday', _('Monday')),
-    ('tuesday', _('Tuesday')),
-    ('wednesday', _('Wednesday')),
-    ('thursday', _('Thursday')),
-    ('friday', _('Friday')),
-    ('saturday', _('Saturday')),
-    ('sunday', _('Sunday')),
+    ('monday', 'Monday'),
+    ('tuesday', 'Tuesday'),
+    ('wednesday', 'Wednesday'),
+    ('thursday', 'Thursday'),
+    ('friday', 'Friday'),
+    ('saturday', 'Saturday'),
+    ('sunday', 'Sunday'),
 ]
 
 WEEKDAY_TO_INT = {

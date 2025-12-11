@@ -1320,7 +1320,6 @@ class ShuttleTrip(models.Model):
             'trip_results': trip_results,
         }
 
-    @api.model
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to generate sequence and check conflicts"""
