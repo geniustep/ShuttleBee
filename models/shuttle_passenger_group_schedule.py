@@ -109,69 +109,117 @@ class ShuttlePassengerGroupSchedule(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Convert Float values to Datetime if needed, respecting timezone"""
+        """Convert Float values to Datetime if needed, respecting timezone.
+        Also check if a record with the same group_id and weekday exists (even if inactive)
+        and activate it instead of creating a duplicate."""
+        records_to_create = []
+        records_to_activate = []
+        
         for vals in vals_list:
-            # Get timezone from group if available
-            tz_name = 'UTC'
-            if 'group_id' in vals:
-                group = self.env['shuttle.passenger.group'].browse(vals['group_id'])
-                if group.exists():
-                    tz_name = (
-                        group.schedule_timezone
-                        or group.company_id.shuttle_schedule_timezone
-                        or group.company_id.partner_id.tz
-                        or self.env.context.get('tz')
-                        or self.env.user.tz
-                        or 'UTC'
-                    )
-            else:
+            group_id = vals.get('group_id')
+            weekday = vals.get('weekday')
+            
+            # Check if a record already exists (even if inactive) for this group and weekday
+            if group_id and weekday:
+                existing = self.search([
+                    ('group_id', '=', group_id),
+                    ('weekday', '=', weekday)
+                ], limit=1)
+                
+                if existing:
+                    # Instead of creating a new record, update the existing one
+                    update_vals = vals.copy()
+                    # Remove group_id and weekday from update_vals as they shouldn't change
+                    update_vals.pop('group_id', None)
+                    update_vals.pop('weekday', None)
+                    
+                    # Process time values if needed
+                    update_vals = self._process_time_values(update_vals, group_id)
+                    
+                    # Activate the record and update it
+                    update_vals['active'] = True
+                    existing.write(update_vals)
+                    records_to_activate.append(existing)
+                    continue
+            
+            # Process time values for new records
+            vals = self._process_time_values(vals, group_id)
+            records_to_create.append(vals)
+        
+        # Create only new records that don't have duplicates
+        result = self.browse()
+        if records_to_create:
+            result = super().create(records_to_create)
+        
+        # Return all records (newly created + reactivated)
+        if records_to_activate:
+            result = result | self.browse([r.id for r in records_to_activate])
+        
+        return result
+    
+    def _process_time_values(self, vals, group_id=None):
+        """Process and convert time values from Float/string to Datetime if needed"""
+        # Get timezone from group if available
+        tz_name = 'UTC'
+        if group_id:
+            group = self.env['shuttle.passenger.group'].browse(group_id)
+            if group.exists():
                 tz_name = (
-                    self.env.context.get('tz')
+                    group.schedule_timezone
+                    or group.company_id.shuttle_schedule_timezone
+                    or group.company_id.partner_id.tz
+                    or self.env.context.get('tz')
                     or self.env.user.tz
                     or 'UTC'
                 )
-            
-            tz = pytz_timezone(tz_name)
-            
-            # Convert pickup_time from Float/string to Datetime if needed
-            if 'pickup_time' in vals and vals['pickup_time']:
-                pickup_val = vals['pickup_time']
-                if isinstance(pickup_val, (int, float)) or (isinstance(pickup_val, str) and pickup_val.replace('.', '', 1).isdigit()):
-                    try:
-                        float_val = float(pickup_val)
-                        hours = int(float_val)
-                        minutes = int(round((float_val - hours) * 60))
-                        today = fields.Date.today()
-                        # Create naive datetime in local timezone
-                        naive_dt = datetime.combine(today, time(hours, minutes))
-                        # Localize to user timezone
-                        local_dt = tz.localize(naive_dt)
-                        # Convert to UTC for storage
-                        utc_dt = local_dt.astimezone(UTC)
-                        vals['pickup_time'] = fields.Datetime.to_string(utc_dt)
-                    except (ValueError, TypeError):
-                        pass
-            
-            # Convert dropoff_time from Float/string to Datetime if needed
-            if 'dropoff_time' in vals and vals['dropoff_time']:
-                dropoff_val = vals['dropoff_time']
-                if isinstance(dropoff_val, (int, float)) or (isinstance(dropoff_val, str) and dropoff_val.replace('.', '', 1).isdigit()):
-                    try:
-                        float_val = float(dropoff_val)
-                        hours = int(float_val)
-                        minutes = int(round((float_val - hours) * 60))
-                        today = fields.Date.today()
-                        # Create naive datetime in local timezone
-                        naive_dt = datetime.combine(today, time(hours, minutes))
-                        # Localize to user timezone
-                        local_dt = tz.localize(naive_dt)
-                        # Convert to UTC for storage
-                        utc_dt = local_dt.astimezone(UTC)
-                        vals['dropoff_time'] = fields.Datetime.to_string(utc_dt)
-                    except (ValueError, TypeError):
-                        pass
+        else:
+            tz_name = (
+                self.env.context.get('tz')
+                or self.env.user.tz
+                or 'UTC'
+            )
         
-        return super().create(vals_list)
+        tz = pytz_timezone(tz_name)
+        
+        # Convert pickup_time from Float/string to Datetime if needed
+        if 'pickup_time' in vals and vals['pickup_time']:
+            pickup_val = vals['pickup_time']
+            if isinstance(pickup_val, (int, float)) or (isinstance(pickup_val, str) and pickup_val.replace('.', '', 1).isdigit()):
+                try:
+                    float_val = float(pickup_val)
+                    hours = int(float_val)
+                    minutes = int(round((float_val - hours) * 60))
+                    today = fields.Date.today()
+                    # Create naive datetime in local timezone
+                    naive_dt = datetime.combine(today, time(hours, minutes))
+                    # Localize to user timezone
+                    local_dt = tz.localize(naive_dt)
+                    # Convert to UTC for storage
+                    utc_dt = local_dt.astimezone(UTC)
+                    vals['pickup_time'] = fields.Datetime.to_string(utc_dt.replace(tzinfo=None))
+                except (ValueError, TypeError):
+                    pass
+        
+        # Convert dropoff_time from Float/string to Datetime if needed
+        if 'dropoff_time' in vals and vals['dropoff_time']:
+            dropoff_val = vals['dropoff_time']
+            if isinstance(dropoff_val, (int, float)) or (isinstance(dropoff_val, str) and dropoff_val.replace('.', '', 1).isdigit()):
+                try:
+                    float_val = float(dropoff_val)
+                    hours = int(float_val)
+                    minutes = int(round((float_val - hours) * 60))
+                    today = fields.Date.today()
+                    # Create naive datetime in local timezone
+                    naive_dt = datetime.combine(today, time(hours, minutes))
+                    # Localize to user timezone
+                    local_dt = tz.localize(naive_dt)
+                    # Convert to UTC for storage
+                    utc_dt = local_dt.astimezone(UTC)
+                    vals['dropoff_time'] = fields.Datetime.to_string(utc_dt.replace(tzinfo=None))
+                except (ValueError, TypeError):
+                    pass
+        
+        return vals
 
     @api.model
     def default_get(self, fields_list):

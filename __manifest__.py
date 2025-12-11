@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ShuttleBee - Shuttle Management',
-    'version': '18.0.2.0.0',
+    'version': '18.0.2.2.0',
     'category': 'Operations/Transportation',
     'summary': 'Manage shuttle transportation services with drivers, passengers, and real-time tracking',
     'description': """
@@ -46,6 +46,8 @@ Version 2.0.0 Improvements:
 * Send text, images, files, locations via WhatsApp
 * Session management with QR code authentication
 * Real-time webhook support for message delivery status
+* Route Optimizer API Integration for automatic passenger sequence optimization
+* Google OR-Tools powered VRP (Vehicle Routing Problem) solver
 
     """,
     'author': 'Your Company',
@@ -83,6 +85,7 @@ Version 2.0.0 Improvements:
         'views/shuttle_trip_line_views.xml',
         'views/shuttle_stop_views.xml',
         'views/shuttle_group_views.xml',
+        'views/shuttle_passenger_group_line_views.xml',
         'views/shuttle_group_schedule_views.xml',
         'views/shuttle_vehicle_views.xml',
         'views/res_partner_views.xml',

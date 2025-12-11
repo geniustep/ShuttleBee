@@ -40,6 +40,10 @@
         <field name="arch" type="xml">
             <form string="Shuttle Trip">
                 <header>
+                    <button name="action_optimize_route" string="🗺️ Optimize Route"
+                            type="object" class="btn-secondary"
+                            invisible="state not in ['draft', 'planned']"
+                            confirm="This will reorder passengers based on the optimal route. Continue?"/>
                     <button name="action_confirm" string="Confirm Trip"
                             type="object" class="oe_highlight"
                             invisible="state != 'draft'"/>
@@ -141,6 +145,9 @@
                                    context="{'default_trip_id': id, 'default_trip_type': trip_type, 'default_group_id': group_id}">
                                 <list string="Passengers" editable="bottom">
                                     <field name="sequence" widget="handle"/>
+                                    <field name="sequence" string="#" readonly="1" 
+                                           decoration-bf="1" width="40px"
+                                           optional="show"/>
                                     <field name="passenger_id"
                                            options="{'no_create': True}"/>
                                     <field name="pickup_stop_id"/>
@@ -219,6 +226,64 @@
 
                         <page string="Notes" name="notes">
                             <field name="notes" placeholder="Additional notes about this trip..."/>
+                        </page>
+
+                        <page string="🗺️ Route Optimization" name="optimization">
+                            <group>
+                                <group string="Optimization Status">
+                                    <field name="optimization_status" widget="badge"
+                                           decoration-success="optimization_status == 'optimized'"
+                                           decoration-danger="optimization_status == 'failed'"
+                                           decoration-muted="optimization_status == 'not_optimized'"/>
+                                    <field name="last_optimization_date" readonly="1"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Before/After Comparison Report -->
+                            <group invisible="optimization_status != 'optimized'">
+                                <group string="❌ قبل التحسين (BEFORE)">
+                                    <field name="original_distance_km" string="المسافة الأصلية (km)" readonly="1"/>
+                                    <field name="original_duration_min" string="الوقت الأصلي (min)" readonly="1"/>
+                                </group>
+                                <group string="✅ بعد التحسين (AFTER)">
+                                    <field name="optimized_distance_km" string="المسافة المحسّنة (km)" readonly="1"/>
+                                    <field name="optimized_duration_min" string="الوقت المحسّن (min)" readonly="1"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Savings Summary -->
+                            <group string="💰 التوفير (SAVINGS)" invisible="optimization_status != 'optimized'">
+                                <group>
+                                    <field name="distance_saved_km" string="المسافة الموفّرة (km)" readonly="1"/>
+                                    <field name="distance_saved_percent" string="نسبة التوفير (%)" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="time_saved_min" string="الوقت الموفّر (min)" readonly="1"/>
+                                </group>
+                            </group>
+                            
+                            <group string="Optimization Message" 
+                                   invisible="not optimization_message">
+                                <field name="optimization_message" readonly="1" nolabel="1"/>
+                            </group>
+                            <group string="⚠️ Unassigned Passengers"
+                                   invisible="not unassigned_passengers">
+                                <field name="unassigned_passengers" readonly="1" nolabel="1"/>
+                            </group>
+                            
+                            <!-- Not Optimized Info -->
+                            <group invisible="optimization_status == 'optimized'">
+                                <div class="alert alert-info" role="alert">
+                                    <strong>ℹ️ How Route Optimization Works</strong><br/>
+                                    Route optimization uses the Route Optimizer API to find the best 
+                                    order to pick up passengers, minimizing total travel distance and time.
+                                    <br/><br/>
+                                    <strong>Requirements:</strong><br/>
+                                    • Vehicle must have parking coordinates (or company GPS coordinates)<br/>
+                                    • Passengers must have valid GPS coordinates (via Stop or direct coordinates)<br/>
+                                    • For best results, set a Destination Stop on the Passenger Group
+                                </div>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

@@ -8,3 +8,4 @@ from . import conflict_detector
 from . import security_utils
 from . import rate_limiter
 from . import waha_service
+from . import route_optimizer_service

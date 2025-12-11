@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Passenger Group Line Kanban View -->
+    <record id="view_shuttle_passenger_group_line_kanban" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.line.kanban</field>
+        <field name="model">shuttle.passenger.group.line</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="group_id" 
+                    class="o_kanban_small_column o_kanban_grouped"
+                    sample="1"
+                    create="0"
+                    quick_create="0"
+                    default_order="sequence"
+                    group_create="0"
+                    group_delete="0"
+                    group_edit="0"
+                    records_draggable="1"
+                    groups_draggable="0">
+                <field name="id"/>
+                <field name="group_id"/>
+                <field name="passenger_id"/>
+                <field name="pickup_info_display"/>
+                <field name="dropoff_info_display"/>
+                <field name="pickup_stop_id"/>
+                <field name="dropoff_stop_id"/>
+                <field name="seat_count"/>
+                <field name="notes"/>
+                <field name="sequence"/>
+                <field name="company_id"/>
+                <field name="passenger_phone"/>
+                <field name="passenger_mobile"/>
+                <field name="guardian_phone"/>
+                <templates>
+                    <t t-name="kanban-header">
+                        <div class="o_kanban_header">
+                            <div class="o_kanban_header_title">
+                                <div class="o_kanban_title_left">
+                                    <span class="o_kanban_title">
+                                        <field name="group_id"/>
+                                    </span>
+                                </div>
+                                <div class="o_kanban_title_right">
+                                    <span class="o_kanban_counter">
+                                        <t t-esc="records.length"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top mb-2">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="passenger_id"/>
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div t-if="record.passenger_phone.raw_value or record.passenger_mobile.raw_value" class="mb-2">
+                                    <i class="fa fa-phone"/> 
+                                    <span t-esc="record.passenger_phone.value || record.passenger_mobile.value || ''"/>
+                                </div>
+                                <div t-if="record.guardian_phone.raw_value" class="mb-2">
+                                    <i class="fa fa-user"/> 
+                                    <span t-esc="record.guardian_phone.value || ''"/>
+                                </div>
+                                <div t-if="record.pickup_info_display.raw_value" class="mb-1">
+                                    <i class="fa fa-map-marker text-primary"/> 
+                                    <strong>صعود:</strong> 
+                                    <span t-esc="record.pickup_info_display.value || ''"/>
+                                </div>
+                                <div t-if="record.dropoff_info_display.raw_value" class="mb-1">
+                                    <i class="fa fa-map-marker text-success"/> 
+                                    <strong>نزول:</strong> 
+                                    <span t-esc="record.dropoff_info_display.value || ''"/>
+                                </div>
+                                <div t-if="record.seat_count.raw_value and record.seat_count.raw_value > 1" class="mt-1">
+                                    <i class="fa fa-users"/> 
+                                    <span t-esc="record.seat_count.value || '1'"/> مقاعد
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom mt-2">
+                                <div t-if="record.notes.raw_value" class="text-muted small">
+                                    <i class="fa fa-sticky-note-o"/> 
+                                    <span t-esc="record.notes.value || ''"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Passenger Group Line List View -->
+    <record id="view_shuttle_passenger_group_line_list" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.line.list</field>
+        <field name="model">shuttle.passenger.group.line</field>
+        <field name="arch" type="xml">
+            <list string="Passengers" sample="1">
+                <field name="sequence" widget="handle"/>
+                <field name="sequence" string="#" readonly="1" width="40px" optional="show"/>
+                <field name="group_id"/>
+                <field name="passenger_id"/>
+                <field name="pickup_info_display" readonly="1"/>
+                <field name="dropoff_info_display" readonly="1"/>
+                <field name="seat_count"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Passenger Group Line Form View -->
+    <record id="view_shuttle_passenger_group_line_form" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.line.form</field>
+        <field name="model">shuttle.passenger.group.line</field>
+        <field name="arch" type="xml">
+            <form string="Passenger Line">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="group_id"/>
+                            <field name="passenger_id"/>
+                            <field name="seat_count"/>
+                        </group>
+                        <group>
+                            <field name="pickup_info_display" readonly="1"/>
+                            <field name="pickup_stop_id">
+                                <button name="action_suggest_nearest_stop" 
+                                        type="object" 
+                                        string="Suggest Nearest"
+                                        context="{'stop_type': 'pickup'}"
+                                        icon="fa-map-marker"
+                                        title="Suggest nearest pickup stop based on passenger GPS coordinates"
+                                        invisible="not passenger_id or not passenger_id.shuttle_latitude"/>
+                            </field>
+                            <field name="dropoff_stop_id">
+                                <button name="action_suggest_nearest_stop" 
+                                        type="object" 
+                                        string="Suggest Nearest"
+                                        context="{'stop_type': 'dropoff'}"
+                                        icon="fa-map-marker"
+                                        title="Suggest nearest dropoff stop based on passenger GPS coordinates"
+                                        invisible="not passenger_id or not passenger_id.shuttle_latitude"/>
+                            </field>
+                            <field name="dropoff_info_display" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes" placeholder="Notes / Requirements..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Passenger Group Line Search View -->
+    <record id="view_shuttle_passenger_group_line_search" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.line.search</field>
+        <field name="model">shuttle.passenger.group.line</field>
+        <field name="arch" type="xml">
+            <search string="Search Passengers">
+                <field name="passenger_id" 
+                       filter_domain="['|', ('passenger_id.name', 'ilike', self), ('passenger_id.phone', 'ilike', self), ('passenger_id.mobile', 'ilike', self)]"/>
+                <field name="group_id"/>
+                <field name="pickup_stop_id"/>
+                <field name="dropoff_stop_id"/>
+                <separator/>
+                <filter string="المجموعات النشطة والغير مدرجين" name="active_groups"
+                        domain="['|', ('group_id', '=', False), ('group_id.active', '=', True)]"/>
+                <filter string="غير مدرجين فقط" name="unassigned_only"
+                        domain="[('group_id', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Group" name="group_by_group"
+                            context="{'group_by': 'group_id'}"/>
+                    <filter string="Pickup Stop" name="group_by_pickup"
+                            context="{'group_by': 'pickup_stop_id'}"/>
+                    <filter string="Dropoff Stop" name="group_by_dropoff"
+                            context="{'group_by': 'dropoff_stop_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action for Passenger Group Lines -->
+    <record id="action_shuttle_passenger_group_line" model="ir.actions.act_window">
+        <field name="name">توزيع الركاب على المجموعات</field>
+        <field name="res_model">shuttle.passenger.group.line</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_id" ref="view_shuttle_passenger_group_line_kanban"/>
+        <field name="context">{
+            'search_default_active_groups': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                لا يوجد ركاب!
+            </p>
+            <p>
+                أضف ركاب للمجموعات لبدء إدارة توزيعهم.
+                يمكنك سحب وإفلات الركاب بين المجموعات لإعادة تنظيمهم.
+            </p>
+            <p>
+                <strong>ملاحظة:</strong> العمود الأول "غير مدرجين في مجموعة" يعرض جميع الركاب الذين لم يتم تعيينهم لأي مجموعة بعد.
+                قم بسحبهم إلى المجموعة المناسبة.
+            </p>
+        </field>
+    </record>
+
+    <!-- Server Action to Load Unassigned Passengers -->
+    <record id="action_load_unassigned_passengers" model="ir.actions.server">
+        <field name="name">تحميل الركاب غير المدرجين</field>
+        <field name="model_id" ref="shuttlebee.model_shuttle_passenger_group_line"/>
+        <field name="binding_model_id" ref="shuttlebee.model_shuttle_passenger_group_line"/>
+        <field name="binding_view_types">kanban,list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = env['shuttle.passenger.group.line'].action_create_unassigned_passengers()
+        </field>
+    </record>
+
+</odoo>
+

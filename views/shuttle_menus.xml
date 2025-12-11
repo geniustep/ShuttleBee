@@ -30,6 +30,12 @@
               action="action_shuttle_passenger_group"
               sequence="30"/>
 
+    <menuitem id="menu_shuttle_passenger_distribution"
+              name="Passenger Distribution"
+              parent="menu_shuttle_operations"
+              action="action_shuttle_passenger_group_line"
+              sequence="35"/>
+
     <!-- Configuration Menu -->
     <menuitem id="menu_shuttle_configuration"
               name="Configuration"

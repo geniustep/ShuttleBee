@@ -143,10 +143,86 @@ class ShuttlePassengerGroup(models.Model):
         default='UTC'
     )
 
+    # Route Optimization Fields
+    optimized_distance_km = fields.Float(
+        string='Optimized Distance (km)',
+        digits=(10, 2),
+        readonly=True,
+        tracking=True,
+        help='Total optimized route distance in kilometers'
+    )
+    optimized_duration_min = fields.Float(
+        string='Optimized Duration (min)',
+        readonly=True,
+        tracking=True,
+        help='Estimated optimized route duration in minutes'
+    )
+    original_distance_km = fields.Float(
+        string='Original Distance (km)',
+        digits=(10, 2),
+        readonly=True,
+        help='Estimated route distance before optimization'
+    )
+    original_duration_min = fields.Float(
+        string='Original Duration (min)',
+        readonly=True,
+        help='Estimated route duration before optimization'
+    )
+    distance_saved_km = fields.Float(
+        string='Distance Saved (km)',
+        digits=(10, 2),
+        compute='_compute_optimization_savings',
+        store=True
+    )
+    distance_saved_percent = fields.Float(
+        string='Distance Saved (%)',
+        digits=(5, 1),
+        compute='_compute_optimization_savings',
+        store=True
+    )
+    time_saved_min = fields.Float(
+        string='Time Saved (min)',
+        compute='_compute_optimization_savings',
+        store=True
+    )
+    last_optimization_date = fields.Datetime(
+        string='Last Optimization',
+        readonly=True,
+        tracking=True
+    )
+    optimization_status = fields.Selection([
+        ('not_optimized', 'Not Optimized'),
+        ('optimized', 'Optimized'),
+        ('failed', 'Optimization Failed'),
+    ], string='Optimization Status', default='not_optimized', tracking=True)
+    optimization_message = fields.Text(
+        string='Optimization Message',
+        readonly=True
+    )
+
     _sql_constraints = [
         ('positive_capacity', 'CHECK(total_seats > 0)',
          'Seat capacity must be positive.'),
     ]
+
+    @api.depends('original_distance_km', 'optimized_distance_km', 'original_duration_min', 'optimized_duration_min')
+    def _compute_optimization_savings(self):
+        """Compute savings from route optimization"""
+        for group in self:
+            if group.original_distance_km and group.optimized_distance_km:
+                group.distance_saved_km = group.original_distance_km - group.optimized_distance_km
+                if group.original_distance_km > 0:
+                    group.distance_saved_percent = (group.distance_saved_km / group.original_distance_km) * 100
+                else:
+                    group.distance_saved_percent = 0.0
+            else:
+                group.distance_saved_km = 0.0
+                group.distance_saved_percent = 0.0
+            
+            if group.original_duration_min and group.optimized_duration_min:
+                group.time_saved_min = group.original_duration_min - group.optimized_duration_min
+            else:
+                group.time_saved_min = 0.0
 
     @api.depends('line_ids')
     def _compute_member_count(self):
@@ -251,6 +327,245 @@ class ShuttlePassengerGroup(models.Model):
                 'default_total_seats': self.total_seats,
             }
         }
+
+    def action_optimize_route(self):
+        """
+        Optimize passenger sequence using Route Optimizer API
+        
+        This optimizes the passenger order in the group template,
+        which will affect all future trips generated from this group.
+        """
+        self.ensure_one()
+        
+        if not self.line_ids:
+            raise UserError(_('Cannot optimize route: No passengers in this group.'))
+        
+        # Import service
+        from ..helpers.route_optimizer_service import create_route_optimizer_service, RouteOptimizerError
+        import json
+        
+        # Collect valid passengers with GPS coordinates
+        valid_lines = []
+        for line in self.line_ids:
+            # Get pickup coordinates
+            if line.pickup_stop_id:
+                lat = line.pickup_stop_id.latitude
+                lng = line.pickup_stop_id.longitude
+            elif line.passenger_id:
+                lat = line.passenger_id.shuttle_latitude
+                lng = line.passenger_id.shuttle_longitude
+            else:
+                lat = lng = None
+            
+            if lat and lng:
+                valid_lines.append({
+                    'line': line,
+                    'lat': lat,
+                    'lng': lng,
+                })
+        
+        if not valid_lines:
+            raise UserError(_('Cannot optimize route: No passengers with valid GPS coordinates.'))
+        
+        # Prepare depot (vehicle parking location or company location)
+        depot_lat = None
+        depot_lng = None
+        depot_name = _('Depot')
+        
+        if self.vehicle_id:
+            if self.vehicle_id.home_latitude and self.vehicle_id.home_longitude:
+                depot_lat = self.vehicle_id.home_latitude
+                depot_lng = self.vehicle_id.home_longitude
+                depot_name = self.vehicle_id.home_address or self.vehicle_id.name
+        
+        if not depot_lat or not depot_lng:
+            company = self.company_id or self.env.company
+            if company.shuttle_latitude and company.shuttle_longitude:
+                depot_lat = company.shuttle_latitude
+                depot_lng = company.shuttle_longitude
+                depot_name = company.name
+        
+        if not depot_lat or not depot_lng:
+            raise UserError(_(
+                'Cannot optimize route: No depot location found. '
+                'Please set the vehicle parking coordinates or company GPS coordinates.'
+            ))
+        
+        depot = {
+            'id': 'depot',
+            'name': depot_name,
+            'lat': depot_lat,
+            'lng': depot_lng,
+            'passengers': 0
+        }
+        
+        # Prepare destination
+        destination = None
+        if self.destination_stop_id:
+            if self.destination_stop_id.latitude and self.destination_stop_id.longitude:
+                destination = {
+                    'id': 'destination',
+                    'name': self.destination_stop_id.name,
+                    'lat': self.destination_stop_id.latitude,
+                    'lng': self.destination_stop_id.longitude,
+                    'passengers': 0
+                }
+        
+        if not destination and self.use_company_destination:
+            company = self.company_id or self.env.company
+            if company.shuttle_latitude and company.shuttle_longitude:
+                destination = {
+                    'id': 'destination',
+                    'name': company.name,
+                    'lat': company.shuttle_latitude,
+                    'lng': company.shuttle_longitude,
+                    'passengers': 0
+                }
+        
+        # Calculate ORIGINAL distance before optimization
+        def haversine(lat1, lng1, lat2, lng2):
+            R = 6371
+            lat1_rad, lat2_rad = math.radians(lat1), math.radians(lat2)
+            delta_lat = math.radians(lat2 - lat1)
+            delta_lng = math.radians(lng2 - lng1)
+            a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lng/2)**2
+            return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        
+        sorted_lines = sorted(valid_lines, key=lambda x: x['line'].sequence)
+        original_distance = 0.0
+        prev_lat, prev_lng = depot_lat, depot_lng
+        
+        for item in sorted_lines:
+            original_distance += haversine(prev_lat, prev_lng, item['lat'], item['lng'])
+            prev_lat, prev_lng = item['lat'], item['lng']
+        
+        if destination:
+            original_distance += haversine(prev_lat, prev_lng, destination['lat'], destination['lng'])
+        
+        speed_kmh = float(self.env['ir.config_parameter'].sudo().get_param(
+            'shuttlebee.route_optimizer_speed_kmh', 40.0
+        ) or 40.0)
+        original_duration = (original_distance / speed_kmh) * 60
+        
+        # Prepare locations
+        locations = []
+        for item in valid_lines:
+            line = item['line']
+            locations.append({
+                'id': str(line.id),
+                'name': line.passenger_id.name,
+                'lat': item['lat'],
+                'lng': item['lng'],
+                'passengers': line.seat_count or 1
+            })
+        
+        vehicles = [{
+            'id': str(self.vehicle_id.id) if self.vehicle_id else 'vehicle',
+            'name': self.vehicle_id.name if self.vehicle_id else _('Default Vehicle'),
+            'seats': self.total_seats or 15
+        }]
+        
+        try:
+            service = create_route_optimizer_service(self.env)
+            
+            result = service.optimize_passenger_route(
+                depot=depot,
+                locations=locations,
+                vehicles=vehicles,
+                destination=destination
+            )
+            
+            if result.get('success'):
+                routes = result.get('routes', [])
+                if routes:
+                    route = routes[0]
+                    stops = route.get('stops', [])
+                    
+                    for stop in stops:
+                        location_id = stop.get('location_id')
+                        order = stop.get('order', 0)
+                        
+                        if location_id in ['depot', 'destination']:
+                            continue
+                        
+                        try:
+                            line_id = int(location_id)
+                            line = self.line_ids.filtered(lambda l: l.id == line_id)
+                            if line:
+                                line.write({'sequence': order * 10})
+                        except (ValueError, TypeError):
+                            pass
+                    
+                    total_distance = route.get('total_distance_km', 0)
+                    total_time = route.get('total_time_minutes', 0)
+                else:
+                    total_distance = result.get('total_distance_km', 0)
+                    total_time = 0
+                
+                # Calculate savings
+                distance_saved = original_distance - total_distance
+                time_saved = original_duration - total_time
+                percent_saved = (distance_saved / original_distance * 100) if original_distance > 0 else 0
+                
+                self.write({
+                    'optimized_distance_km': total_distance,
+                    'optimized_duration_min': total_time,
+                    'original_distance_km': round(original_distance, 2),
+                    'original_duration_min': round(original_duration, 0),
+                    'last_optimization_date': fields.Datetime.now(),
+                    'optimization_status': 'optimized',
+                    'optimization_message': result.get('message', _('Optimization successful')),
+                })
+                
+                self.message_post(body=_(
+                    '🗺️ Route optimized: %(distance).2f km (was %(orig).2f km), ~%(time)d min (was %(orig_time)d min). '
+                    'Saved: %(saved).2f km (%(percent).1f%%)'
+                ) % {
+                    'distance': total_distance,
+                    'orig': original_distance,
+                    'time': total_time,
+                    'orig_time': int(original_duration),
+                    'saved': distance_saved,
+                    'percent': percent_saved,
+                })
+                
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Route Optimization'),
+                        'message': _(
+                            '✅ Route optimized!\n\n'
+                            '📊 BEFORE → AFTER:\n'
+                            '📏 Distance: %.2f km → %.2f km\n'
+                            '⏱️ Time: %d min → %d min\n\n'
+                            '💰 SAVINGS: %.2f km (%.1f%%)'
+                        ) % (original_distance, total_distance, int(original_duration), total_time, distance_saved, percent_saved),
+                        'type': 'success',
+                        'sticky': True,
+                    }
+                }
+            else:
+                self.write({
+                    'optimization_status': 'failed',
+                    'optimization_message': result.get('message', _('Optimization failed')),
+                })
+                raise UserError(_('Route optimization failed: %s') % result.get('message', _('Unknown error')))
+                
+        except RouteOptimizerError as e:
+            _logger.error('Route optimization failed for group %s: %s', self.id, str(e))
+            self.write({
+                'optimization_status': 'failed',
+                'optimization_message': str(e),
+            })
+            raise UserError(_('Route optimization failed: %s') % str(e))
+        except Exception as e:
+            _logger.error('Unexpected error during route optimization for group %s: %s', self.id, str(e), exc_info=True)
+            self.write({
+                'optimization_status': 'failed',
+                'optimization_message': str(e),
+            })
+            raise UserError(_('Route optimization failed: %s') % str(e))
 
     def _prepare_trip_line_values(self, trip_id=None, trip_type=None):
         self.ensure_one()
@@ -641,8 +956,9 @@ class ShuttlePassengerGroupLine(models.Model):
     group_id = fields.Many2one(
         'shuttle.passenger.group',
         string='Group',
-        required=True,
-        ondelete='cascade'
+        required=False,
+        ondelete='cascade',
+        help='Passenger group. Leave empty for unassigned passengers.'
     )
     sequence = fields.Integer(default=10, help='Order of pickup within the route.')
     passenger_id = fields.Many2one(
@@ -671,7 +987,8 @@ class ShuttlePassengerGroupLine(models.Model):
     notes = fields.Char(string='Notes / Requirements', translate=True)
     company_id = fields.Many2one(
         'res.company',
-        related='group_id.company_id',
+        string='Company',
+        compute='_compute_company_id',
         store=True,
         readonly=True
     )
@@ -687,6 +1004,24 @@ class ShuttlePassengerGroupLine(models.Model):
         store=True,
         help='Readable dropoff information showing either the stop name or the passenger address.'
     )
+    passenger_phone = fields.Char(
+        string='Passenger Phone',
+        related='passenger_id.phone',
+        store=False,
+        readonly=True
+    )
+    passenger_mobile = fields.Char(
+        string='Passenger Mobile',
+        related='passenger_id.mobile',
+        store=False,
+        readonly=True
+    )
+    guardian_phone = fields.Char(
+        string='Guardian Phone',
+        related='passenger_id.guardian_phone',
+        store=False,
+        readonly=True
+    )
 
     _sql_constraints = [
         ('unique_passenger_per_group',
@@ -695,6 +1030,144 @@ class ShuttlePassengerGroupLine(models.Model):
         ('positive_seat_requirement', 'CHECK(seat_count > 0)',
          'Seat count must be positive.'),
     ]
+
+    @api.depends('group_id', 'group_id.company_id', 'passenger_id', 'passenger_id.company_id')
+    def _compute_company_id(self):
+        """Compute company_id from group_id or passenger_id"""
+        for line in self:
+            if line.group_id and line.group_id.company_id:
+                line.company_id = line.group_id.company_id
+            elif line.passenger_id and line.passenger_id.company_id:
+                line.company_id = line.passenger_id.company_id
+            else:
+                line.company_id = self.env.company
+
+    @api.model
+    def read_group(self, domain, fields, groupby, offset=0, limit=None, orderby=False, lazy=True):
+        """Override read_group to show all groups (even empty ones) and unassigned passengers"""
+        # Check if groupby includes group_id (handle both string and list formats)
+        groupby_list = groupby if isinstance(groupby, list) else [groupby] if groupby else []
+        groupby_fields = [g.split(':')[0] for g in groupby_list]
+        
+        if 'group_id' in groupby_fields:
+            # Auto-load unassigned passengers - always sync to ensure all unassigned passengers are shown
+            self._sync_unassigned_passengers()
+            
+            # Get standard result
+            result = super().read_group(domain, fields, groupby, offset=offset, limit=limit, orderby=orderby, lazy=lazy)
+            
+            # Get all active groups
+            all_groups = self.env['shuttle.passenger.group'].search([
+                ('active', '=', True)
+            ], order='name')
+            
+            # Get group IDs that already have results
+            existing_group_ids = set()
+            for res in result:
+                if res.get('group_id'):
+                    existing_group_ids.add(res['group_id'][0])
+            
+            # Add empty groups
+            for group in all_groups:
+                if group.id not in existing_group_ids:
+                    result.append({
+                        'group_id': (group.id, group.name),
+                        'group_id_count': 0,
+                        '__domain': [('group_id', '=', group.id)] + domain,
+                    })
+            
+            # Always add unassigned column at the beginning
+            has_unassigned = any(not res.get('group_id') for res in result)
+            if not has_unassigned:
+                unassigned_count = self.search_count([('group_id', '=', False)] + domain)
+                # Insert at beginning so it appears first
+                result.insert(0, {
+                    'group_id': (False, _('غير مدرجين في مجموعة')),
+                    'group_id_count': unassigned_count,
+                    '__domain': [('group_id', '=', False)] + domain,
+                })
+            else:
+                # Update the label for existing unassigned entry
+                for res in result:
+                    if not res.get('group_id') or (isinstance(res.get('group_id'), tuple) and not res['group_id'][0]):
+                        res['group_id'] = (False, _('غير مدرجين في مجموعة'))
+                        break
+            
+            return result
+        return super().read_group(domain, fields, groupby, offset=offset, limit=limit, orderby=orderby, lazy=lazy)
+
+    @api.model
+    def _sync_unassigned_passengers(self):
+        """
+        Sync unassigned passengers - create records for passengers not assigned to any group.
+        A passenger is "unassigned" if they don't have any record with group_id set (not False).
+        """
+        # Get all shuttle passengers
+        all_passengers = self.env['res.partner'].search([
+            ('is_shuttle_passenger', '=', True)
+        ])
+        all_passenger_ids = set(all_passengers.ids)
+        _logger.info('_sync_unassigned_passengers: Found %d shuttle passengers', len(all_passenger_ids))
+        
+        # Get passengers who ARE assigned to a group (have a record with group_id != False)
+        assigned_lines = self.search([('group_id', '!=', False)])
+        assigned_passenger_ids = set(assigned_lines.mapped('passenger_id.id'))
+        _logger.info('_sync_unassigned_passengers: %d passengers are assigned to groups', len(assigned_passenger_ids))
+        
+        # Get passengers who already have an unassigned record (group_id = False)
+        unassigned_lines = self.search([('group_id', '=', False)])
+        unassigned_passenger_ids = set(unassigned_lines.mapped('passenger_id.id'))
+        _logger.info('_sync_unassigned_passengers: %d passengers already have unassigned records', len(unassigned_passenger_ids))
+        
+        # Find passengers who need an unassigned record:
+        # - They are shuttle passengers
+        # - They are NOT assigned to any group
+        # - They don't already have an unassigned record
+        need_unassigned_record = all_passenger_ids - assigned_passenger_ids - unassigned_passenger_ids
+        _logger.info('_sync_unassigned_passengers: %d passengers need unassigned records', len(need_unassigned_record))
+        
+        # Create unassigned records for these passengers
+        if need_unassigned_record:
+            lines_to_create = [{'passenger_id': pid, 'group_id': False} for pid in need_unassigned_record]
+            self.create(lines_to_create)
+            _logger.info('Auto-created %d unassigned passenger records', len(lines_to_create))
+        
+        # Clean up: Remove unassigned records for passengers who are now assigned to a group
+        # (they were moved from unassigned to a group, but the unassigned record wasn't deleted)
+        orphan_unassigned = unassigned_lines.filtered(
+            lambda l: l.passenger_id.id in assigned_passenger_ids
+        )
+        if orphan_unassigned:
+            orphan_unassigned.unlink()
+            _logger.info('Removed %d orphan unassigned records (passengers now in groups)', len(orphan_unassigned))
+        
+        # Clean up: Remove unassigned records for passengers who are no longer shuttle passengers
+        invalid_unassigned = unassigned_lines.filtered(
+            lambda l: l.passenger_id.id not in all_passenger_ids
+        )
+        if invalid_unassigned:
+            invalid_unassigned.unlink()
+            _logger.info('Removed %d invalid unassigned records (passengers deleted)', len(invalid_unassigned))
+
+    def write(self, vals):
+        """Handle group_id changes when moving passengers between groups via Kanban drag & drop"""
+        if 'group_id' in vals:
+            new_group_id = vals['group_id']
+            for line in self:
+                if line.passenger_id and new_group_id:
+                    # Check if passenger already exists in the target group
+                    existing_line = self.search([
+                        ('group_id', '=', new_group_id),
+                        ('passenger_id', '=', line.passenger_id.id),
+                        ('id', '!=', line.id)
+                    ], limit=1)
+                    if existing_line:
+                        raise UserError(_(
+                            'Cannot move passenger "%s" to group "%s". '
+                            'This passenger already exists in that group. '
+                            'Please remove the passenger from the target group first, or choose a different group.'
+                        ) % (line.passenger_id.name, existing_line.group_id.name))
+        return super().write(vals)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -712,8 +1185,67 @@ class ShuttlePassengerGroupLine(models.Model):
                     if 'dropoff_stop_id' not in vals or not vals.get('dropoff_stop_id'):
                         if passenger.default_dropoff_stop_id:
                             vals['dropoff_stop_id'] = passenger.default_dropoff_stop_id.id
+                    
+                    # Set company_id if not provided
+                    if 'company_id' not in vals:
+                        if vals.get('group_id') and self.env['shuttle.passenger.group'].browse(vals['group_id']).company_id:
+                            vals['company_id'] = self.env['shuttle.passenger.group'].browse(vals['group_id']).company_id.id
+                        elif passenger.company_id:
+                            vals['company_id'] = passenger.company_id.id
         
         return super().create(vals_list)
+    
+    def action_create_unassigned_passengers(self):
+        """Create group line records for all passengers not assigned to any group"""
+        # Get all shuttle passengers
+        all_passengers = self.env['res.partner'].search([
+            ('is_shuttle_passenger', '=', True)
+        ])
+        
+        # Get passengers who ARE assigned to a group (have a record with group_id != False)
+        assigned_lines = self.search([('group_id', '!=', False)])
+        assigned_passenger_ids = set(assigned_lines.mapped('passenger_id.id'))
+        
+        # Get passengers who already have an unassigned record
+        unassigned_lines = self.search([('group_id', '=', False)])
+        unassigned_passenger_ids = set(unassigned_lines.mapped('passenger_id.id'))
+        
+        # Find passengers who need an unassigned record
+        lines_to_create = []
+        for passenger in all_passengers:
+            # Skip if already assigned to a group
+            if passenger.id in assigned_passenger_ids:
+                continue
+            # Skip if already has an unassigned record
+            if passenger.id in unassigned_passenger_ids:
+                continue
+            lines_to_create.append({
+                'passenger_id': passenger.id,
+                'group_id': False,
+            })
+        
+        if lines_to_create:
+            self.create(lines_to_create)
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Success'),
+                    'message': _('Created %d unassigned passenger records.') % len(lines_to_create),
+                    'type': 'success',
+                }
+            }
+        else:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Info'),
+                    'message': _('All passengers are already assigned to groups or no unassigned passengers found.'),
+                    'type': 'info',
+                }
+            }
+    
 
     @api.depends(
         'pickup_stop_id',

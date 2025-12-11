@@ -99,6 +99,32 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='shuttlebee.template_arrived',
         default='السائق {driver_name} وصل إلى {stop_name}. يرجى التوجه للحافلة.'
     )
+    
+    # Route Optimizer Settings
+    shuttlebee_route_optimizer_url = fields.Char(
+        string='Route Optimizer API URL',
+        config_parameter='shuttlebee.route_optimizer_url',
+        default='https://route-optimizer.geniura.com/optimize',
+        help='URL for the Route Optimizer API endpoint (e.g., https://route-optimizer.geniura.com/optimize)'
+    )
+    shuttlebee_route_optimizer_timeout = fields.Integer(
+        string='Route Optimizer Timeout (seconds)',
+        config_parameter='shuttlebee.route_optimizer_timeout',
+        default=60,
+        help='Maximum time to wait for route optimization response'
+    )
+    shuttlebee_route_optimizer_speed_kmh = fields.Float(
+        string='Average Speed (km/h)',
+        config_parameter='shuttlebee.route_optimizer_speed_kmh',
+        default=40.0,
+        help='Average vehicle speed used for time estimation'
+    )
+    shuttlebee_route_optimizer_max_time = fields.Integer(
+        string='Max Optimization Time (seconds)',
+        config_parameter='shuttlebee.route_optimizer_max_time',
+        default=30,
+        help='Maximum time for the optimizer to find a solution'
+    )
 
     def set_values(self):
         super().set_values()
@@ -126,6 +152,10 @@ class ResConfigSettings(models.TransientModel):
         _set_param('shuttlebee.waha_webhook_url', self.shuttlebee_waha_webhook_url)
         _set_param('shuttlebee.template_approaching', self.shuttlebee_template_approaching)
         _set_param('shuttlebee.template_arrived', self.shuttlebee_template_arrived)
+        _set_param('shuttlebee.route_optimizer_url', self.shuttlebee_route_optimizer_url)
+        _set_param('shuttlebee.route_optimizer_timeout', self.shuttlebee_route_optimizer_timeout)
+        _set_param('shuttlebee.route_optimizer_speed_kmh', self.shuttlebee_route_optimizer_speed_kmh)
+        _set_param('shuttlebee.route_optimizer_max_time', self.shuttlebee_route_optimizer_max_time)
 
     @classmethod
     def _get_company_param(cls, env, key, company=None, default=False):
@@ -155,6 +185,10 @@ class ResConfigSettings(models.TransientModel):
             'shuttlebee_waha_webhook_url': self._get_company_param(self.env, 'shuttlebee.waha_webhook_url', company, ''),
             'shuttlebee_template_approaching': self._get_company_param(self.env, 'shuttlebee.template_approaching', company, ''),
             'shuttlebee_template_arrived': self._get_company_param(self.env, 'shuttlebee.template_arrived', company, ''),
+            'shuttlebee_route_optimizer_url': self._get_company_param(self.env, 'shuttlebee.route_optimizer_url', company, 'https://route-optimizer.geniura.com/optimize'),
+            'shuttlebee_route_optimizer_timeout': int(self._get_company_param(self.env, 'shuttlebee.route_optimizer_timeout', company, 60) or 60),
+            'shuttlebee_route_optimizer_speed_kmh': float(self._get_company_param(self.env, 'shuttlebee.route_optimizer_speed_kmh', company, 40.0) or 40.0),
+            'shuttlebee_route_optimizer_max_time': int(self._get_company_param(self.env, 'shuttlebee.route_optimizer_max_time', company, 30) or 30),
         })
         return res
 

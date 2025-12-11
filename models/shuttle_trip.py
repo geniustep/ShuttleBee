@@ -8,6 +8,7 @@ from odoo.exceptions import ValidationError, UserError
 # Import helper utilities
 from ..helpers.conflict_detector import ConflictDetector
 from ..helpers.logging_utils import trip_logger
+from ..helpers.route_optimizer_service import create_route_optimizer_service, RouteOptimizerError
 
 _logger = logging.getLogger('shuttlebee.trip')
 
@@ -221,6 +222,80 @@ class ShuttleTrip(models.Model):
         ('high', 'High'),
     ], string='Risk Level', default='low', tracking=True)
 
+    # Route Optimization Fields
+    optimized_distance_km = fields.Float(
+        string='Optimized Distance (km)',
+        digits=(10, 2),
+        readonly=True,
+        tracking=True,
+        help='Total optimized route distance in kilometers'
+    )
+    optimized_duration_min = fields.Float(
+        string='Optimized Duration (min)',
+        readonly=True,
+        tracking=True,
+        help='Estimated optimized route duration in minutes'
+    )
+    # Before optimization (for comparison)
+    original_distance_km = fields.Float(
+        string='Original Distance (km)',
+        digits=(10, 2),
+        readonly=True,
+        help='Estimated route distance before optimization'
+    )
+    original_duration_min = fields.Float(
+        string='Original Duration (min)',
+        readonly=True,
+        help='Estimated route duration before optimization'
+    )
+    original_passenger_order = fields.Text(
+        string='Original Passenger Order',
+        readonly=True,
+        help='JSON list of passenger order before optimization'
+    )
+    # Savings
+    distance_saved_km = fields.Float(
+        string='Distance Saved (km)',
+        digits=(10, 2),
+        compute='_compute_optimization_savings',
+        store=True,
+        help='Distance saved by optimization'
+    )
+    distance_saved_percent = fields.Float(
+        string='Distance Saved (%)',
+        digits=(5, 1),
+        compute='_compute_optimization_savings',
+        store=True,
+        help='Percentage of distance saved'
+    )
+    time_saved_min = fields.Float(
+        string='Time Saved (min)',
+        compute='_compute_optimization_savings',
+        store=True,
+        help='Time saved by optimization in minutes'
+    )
+    last_optimization_date = fields.Datetime(
+        string='Last Optimization',
+        readonly=True,
+        tracking=True,
+        help='Timestamp of the last route optimization'
+    )
+    optimization_status = fields.Selection([
+        ('not_optimized', 'Not Optimized'),
+        ('optimized', 'Optimized'),
+        ('failed', 'Optimization Failed'),
+    ], string='Optimization Status', default='not_optimized', tracking=True)
+    optimization_message = fields.Text(
+        string='Optimization Message',
+        readonly=True,
+        help='Message from the last optimization attempt'
+    )
+    unassigned_passengers = fields.Text(
+        string='Unassigned Passengers',
+        readonly=True,
+        help='List of passengers that could not be assigned to the route'
+    )
+
     # State
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -356,6 +431,25 @@ class ShuttleTrip(models.Model):
                 trip.occupancy_rate = (trip.booked_seats / trip.total_seats) * 100
             else:
                 trip.occupancy_rate = 0.0
+
+    @api.depends('original_distance_km', 'optimized_distance_km', 'original_duration_min', 'optimized_duration_min')
+    def _compute_optimization_savings(self):
+        """Compute savings from route optimization"""
+        for trip in self:
+            if trip.original_distance_km and trip.optimized_distance_km:
+                trip.distance_saved_km = trip.original_distance_km - trip.optimized_distance_km
+                if trip.original_distance_km > 0:
+                    trip.distance_saved_percent = (trip.distance_saved_km / trip.original_distance_km) * 100
+                else:
+                    trip.distance_saved_percent = 0.0
+            else:
+                trip.distance_saved_km = 0.0
+                trip.distance_saved_percent = 0.0
+            
+            if trip.original_duration_min and trip.optimized_duration_min:
+                trip.time_saved_min = trip.original_duration_min - trip.optimized_duration_min
+            else:
+                trip.time_saved_min = 0.0
 
     @api.depends('planned_start_time', 'planned_arrival_time', 'actual_start_time', 'actual_arrival_time')
     def _compute_time_metrics(self):
@@ -544,6 +638,349 @@ class ShuttleTrip(models.Model):
                 }
             }
         return True
+
+    def action_optimize_route(self):
+        """
+        Optimize passenger route using the Route Optimizer API
+        
+        This method:
+        1. Collects depot (vehicle parking) and destination (group destination) locations
+        2. Gathers all passenger locations with their seat requirements
+        3. Sends data to Route Optimizer API
+        4. Updates passenger sequence based on optimized route
+        5. Updates trip statistics (optimized distance, duration)
+        
+        Returns:
+            dict: Action to display notification with optimization results
+        """
+        self.ensure_one()
+        
+        # Validate trip state
+        if self.state not in ['draft', 'planned']:
+            raise UserError(_('Route optimization is only available for Draft and Planned trips.'))
+        
+        # Validate passengers
+        if not self.line_ids:
+            raise UserError(_('Cannot optimize route: No passengers in this trip.'))
+        
+        # Collect valid passengers with GPS coordinates
+        valid_lines = []
+        for line in self.line_ids:
+            # Get pickup coordinates
+            if line.pickup_stop_id:
+                lat = line.pickup_stop_id.latitude
+                lng = line.pickup_stop_id.longitude
+            else:
+                lat = line.pickup_latitude
+                lng = line.pickup_longitude
+            
+            if lat and lng:
+                valid_lines.append({
+                    'line': line,
+                    'lat': lat,
+                    'lng': lng,
+                })
+        
+        if not valid_lines:
+            raise UserError(_('Cannot optimize route: No passengers with valid GPS coordinates.'))
+        
+        # Prepare depot (vehicle parking location or company location)
+        depot_lat = None
+        depot_lng = None
+        depot_name = _('Depot')
+        
+        # Try vehicle home location first
+        if self.vehicle_id:
+            if self.vehicle_id.home_latitude and self.vehicle_id.home_longitude:
+                depot_lat = self.vehicle_id.home_latitude
+                depot_lng = self.vehicle_id.home_longitude
+                depot_name = self.vehicle_id.home_address or self.vehicle_id.name
+        
+        # Fallback to company location
+        if not depot_lat or not depot_lng:
+            company = self.company_id or self.env.company
+            if company.shuttle_latitude and company.shuttle_longitude:
+                depot_lat = company.shuttle_latitude
+                depot_lng = company.shuttle_longitude
+                depot_name = company.name
+        
+        if not depot_lat or not depot_lng:
+            raise UserError(_(
+                'Cannot optimize route: No depot location found. '
+                'Please set the vehicle parking coordinates or company GPS coordinates.'
+            ))
+        
+        depot = {
+            'id': 'depot',
+            'name': depot_name,
+            'lat': depot_lat,
+            'lng': depot_lng,
+            'passengers': 0
+        }
+        
+        # Prepare destination
+        destination = None
+        if self.group_id and self.group_id.destination_stop_id:
+            dest_stop = self.group_id.destination_stop_id
+            if dest_stop.latitude and dest_stop.longitude:
+                destination = {
+                    'id': 'destination',
+                    'name': dest_stop.name,
+                    'lat': dest_stop.latitude,
+                    'lng': dest_stop.longitude,
+                    'passengers': 0
+                }
+        
+        # Fallback to company location if use_company_destination is enabled
+        if not destination and self.group_id and self.group_id.use_company_destination:
+            company = self.company_id or self.env.company
+            if company.shuttle_latitude and company.shuttle_longitude:
+                destination = {
+                    'id': 'destination',
+                    'name': company.name,
+                    'lat': company.shuttle_latitude,
+                    'lng': company.shuttle_longitude,
+                    'passengers': 0
+                }
+        
+        # Prepare passenger locations
+        locations = []
+        for item in valid_lines:
+            line = item['line']
+            locations.append({
+                'id': str(line.id),
+                'name': line.passenger_id.name,
+                'lat': item['lat'],
+                'lng': item['lng'],
+                'passengers': line.seat_count or 1
+            })
+        
+        # Prepare vehicle
+        vehicles = [{
+            'id': str(self.vehicle_id.id) if self.vehicle_id else 'vehicle',
+            'name': self.vehicle_id.name if self.vehicle_id else _('Default Vehicle'),
+            'seats': self.total_seats or 15
+        }]
+        
+        # Calculate ORIGINAL distance (before optimization) using current sequence
+        import json
+        import math
+        
+        def haversine(lat1, lng1, lat2, lng2):
+            """Calculate distance between two GPS points in km"""
+            R = 6371  # Earth radius in km
+            lat1_rad, lat2_rad = math.radians(lat1), math.radians(lat2)
+            delta_lat = math.radians(lat2 - lat1)
+            delta_lng = math.radians(lng2 - lng1)
+            a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lng/2)**2
+            return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        
+        # Store original passenger order
+        original_order = []
+        sorted_lines = sorted(valid_lines, key=lambda x: x['line'].sequence)
+        for item in sorted_lines:
+            original_order.append({
+                'id': item['line'].id,
+                'name': item['line'].passenger_id.name,
+                'sequence': item['line'].sequence,
+            })
+        
+        # Calculate original route distance (current order)
+        original_distance = 0.0
+        prev_lat, prev_lng = depot_lat, depot_lng
+        
+        for item in sorted_lines:
+            original_distance += haversine(prev_lat, prev_lng, item['lat'], item['lng'])
+            prev_lat, prev_lng = item['lat'], item['lng']
+        
+        # Add distance to destination if exists
+        if destination:
+            original_distance += haversine(prev_lat, prev_lng, destination['lat'], destination['lng'])
+        
+        # Calculate original duration
+        speed_kmh = float(self.env['ir.config_parameter'].sudo().get_param(
+            'shuttlebee.route_optimizer_speed_kmh', 40.0
+        ) or 40.0)
+        original_duration = (original_distance / speed_kmh) * 60  # minutes
+        
+        # Call Route Optimizer API
+        try:
+            service = create_route_optimizer_service(self.env)
+            
+            result = service.optimize_passenger_route(
+                depot=depot,
+                locations=locations,
+                vehicles=vehicles,
+                destination=destination
+            )
+            
+            if result.get('success'):
+                # Update passenger sequence based on optimized route
+                routes = result.get('routes', [])
+                if routes:
+                    route = routes[0]  # Single vehicle, single route
+                    stops = route.get('stops', [])
+                    
+                    # Update sequence for each passenger
+                    for stop in stops:
+                        location_id = stop.get('location_id')
+                        order = stop.get('order', 0)
+                        
+                        # Skip depot and destination
+                        if location_id in ['depot', 'destination']:
+                            continue
+                        
+                        # Find and update passenger line
+                        try:
+                            line_id = int(location_id)
+                            line = self.line_ids.filtered(lambda l: l.id == line_id)
+                            if line:
+                                line.write({'sequence': order * 10})
+                        except (ValueError, TypeError):
+                            pass
+                    
+                    # Update trip optimization stats
+                    total_distance = route.get('total_distance_km', 0)
+                    total_time = route.get('total_time_minutes', 0)
+                else:
+                    total_distance = result.get('total_distance_km', 0)
+                    total_time = 0
+                
+                # Handle unassigned passengers
+                unassigned_ids = result.get('unassigned', [])
+                unassigned_names = []
+                if unassigned_ids:
+                    for uid in unassigned_ids:
+                        try:
+                            line_id = int(uid)
+                            line = self.line_ids.filtered(lambda l: l.id == line_id)
+                            if line:
+                                unassigned_names.append(line.passenger_id.name)
+                        except (ValueError, TypeError):
+                            pass
+                
+                # Update trip record with before/after data
+                self.write({
+                    'optimized_distance_km': total_distance,
+                    'optimized_duration_min': total_time,
+                    'original_distance_km': round(original_distance, 2),
+                    'original_duration_min': round(original_duration, 0),
+                    'original_passenger_order': json.dumps(original_order, ensure_ascii=False),
+                    'last_optimization_date': fields.Datetime.now(),
+                    'optimization_status': 'optimized',
+                    'optimization_message': result.get('message', _('Optimization successful')),
+                    'unassigned_passengers': ', '.join(unassigned_names) if unassigned_names else False,
+                })
+                
+                # Calculate savings
+                distance_saved = original_distance - total_distance
+                time_saved = original_duration - total_time
+                percent_saved = (distance_saved / original_distance * 100) if original_distance > 0 else 0
+                
+                # Log event
+                self._log_event(_(
+                    'Route optimized: %(distance).2f km (was %(orig).2f km), ~%(time)d min (was %(orig_time)d min). '
+                    'Saved: %(saved).2f km (%(percent).1f%%). %(unassigned)s'
+                ) % {
+                    'distance': total_distance,
+                    'orig': original_distance,
+                    'time': total_time,
+                    'orig_time': int(original_duration),
+                    'saved': distance_saved,
+                    'percent': percent_saved,
+                    'unassigned': _('%d passengers unassigned.') % len(unassigned_names) if unassigned_names else ''
+                })
+                
+                # Return success notification with comparison
+                message = _(
+                    '✅ Route optimized successfully!\n\n'
+                    '📊 BEFORE → AFTER:\n'
+                    '📏 Distance: %.2f km → %.2f km\n'
+                    '⏱️ Time: %d min → %d min\n\n'
+                    '💰 SAVINGS:\n'
+                    '📉 %.2f km saved (%.1f%%)\n'
+                    '⏰ %d minutes saved'
+                ) % (
+                    original_distance, total_distance,
+                    int(original_duration), total_time,
+                    distance_saved, percent_saved,
+                    int(time_saved)
+                )
+                if unassigned_names:
+                    message += _('\n\n⚠️ Unassigned passengers: %s') % ', '.join(unassigned_names)
+                
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Route Optimization'),
+                        'message': message,
+                        'type': 'success' if not unassigned_names else 'warning',
+                        'sticky': True,
+                    }
+                }
+            else:
+                # Optimization failed
+                self.write({
+                    'optimization_status': 'failed',
+                    'optimization_message': result.get('message', _('Optimization failed')),
+                })
+                
+                raise UserError(_('Route optimization failed: %s') % result.get('message', _('Unknown error')))
+                
+        except RouteOptimizerError as e:
+            _logger.error('Route optimization failed for trip %s: %s', self.id, str(e))
+            self.write({
+                'optimization_status': 'failed',
+                'optimization_message': str(e),
+            })
+            raise UserError(_('Route optimization failed: %s') % str(e))
+        except Exception as e:
+            _logger.error('Unexpected error during route optimization for trip %s: %s', self.id, str(e), exc_info=True)
+            self.write({
+                'optimization_status': 'failed',
+                'optimization_message': str(e),
+            })
+            raise UserError(_('Route optimization failed: %s') % str(e))
+
+    def action_test_route_optimizer(self):
+        """Test the Route Optimizer API connection"""
+        self.ensure_one()
+        
+        try:
+            service = create_route_optimizer_service(self.env)
+            is_healthy = service.health_check()
+            
+            if is_healthy:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Route Optimizer'),
+                        'message': _('✅ Route Optimizer API is healthy and ready!'),
+                        'type': 'success',
+                    }
+                }
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Route Optimizer'),
+                        'message': _('⚠️ Route Optimizer API is not responding properly.'),
+                        'type': 'warning',
+                    }
+                }
+        except Exception as e:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Route Optimizer'),
+                    'message': _('❌ Failed to connect: %s') % str(e),
+                    'type': 'danger',
+                }
+            }
 
     def action_cancel_trip(self):
         """API-friendly cancel action"""

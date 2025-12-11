@@ -26,6 +26,11 @@
         <field name="arch" type="xml">
             <form string="Passenger Group">
                 <header>
+                    <button name="action_optimize_route"
+                            type="object"
+                            class="btn-secondary"
+                            string="🗺️ Optimize Route"
+                            confirm="This will reorder passengers based on the optimal route. Continue?"/>
                     <button name="action_open_generate_trip_wizard"
                             type="object"
                             class="oe_highlight"
@@ -88,6 +93,7 @@
                             <field name="line_ids" context="{'default_group_id': id}" mode="list,form" editable="bottom">
                                 <list string="Passengers" editable="bottom">
                                     <field name="sequence" widget="handle"/>
+                                    <field name="sequence" string="#" readonly="1" width="40px" optional="show"/>
                                     <field name="passenger_id"/>
                                     <field name="pickup_info_display" readonly="1"/>
                                     <field name="pickup_stop_id" string="Pickup Stop"/>
@@ -210,6 +216,57 @@
                             <div class="o_form_label">
                                 <span>A cron runs every Saturday at 08:00 to generate the schedule for next week for enabled groups.</span>
                             </div>
+                        </page>
+                        <page string="🗺️ Route Optimization" name="optimization">
+                            <group>
+                                <group string="Optimization Status">
+                                    <field name="optimization_status" widget="badge"
+                                           decoration-success="optimization_status == 'optimized'"
+                                           decoration-danger="optimization_status == 'failed'"
+                                           decoration-muted="optimization_status == 'not_optimized'"/>
+                                    <field name="last_optimization_date" readonly="1"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Before/After Comparison -->
+                            <group invisible="optimization_status != 'optimized'">
+                                <group string="❌ قبل التحسين (BEFORE)">
+                                    <field name="original_distance_km" string="المسافة الأصلية (km)" readonly="1"/>
+                                    <field name="original_duration_min" string="الوقت الأصلي (min)" readonly="1"/>
+                                </group>
+                                <group string="✅ بعد التحسين (AFTER)">
+                                    <field name="optimized_distance_km" string="المسافة المحسّنة (km)" readonly="1"/>
+                                    <field name="optimized_duration_min" string="الوقت المحسّن (min)" readonly="1"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Savings -->
+                            <group string="💰 التوفير (SAVINGS)" invisible="optimization_status != 'optimized'">
+                                <group>
+                                    <field name="distance_saved_km" string="المسافة الموفّرة (km)" readonly="1"/>
+                                    <field name="distance_saved_percent" string="نسبة التوفير (%)" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="time_saved_min" string="الوقت الموفّر (min)" readonly="1"/>
+                                </group>
+                            </group>
+                            
+                            <group string="Optimization Message" invisible="not optimization_message">
+                                <field name="optimization_message" readonly="1" nolabel="1"/>
+                            </group>
+                            
+                            <group invisible="optimization_status == 'optimized'">
+                                <div class="alert alert-info" role="alert">
+                                    <strong>ℹ️ Route Optimization</strong><br/>
+                                    Optimizing the passenger order will reorder passengers based on the shortest route.
+                                    This affects the template and all future trips generated from this group.
+                                    <br/><br/>
+                                    <strong>Requirements:</strong><br/>
+                                    • Vehicle parking coordinates OR company GPS coordinates<br/>
+                                    • Passengers with GPS coordinates (via Stop or directly)<br/>
+                                    • Optionally set a Destination Stop
+                                </div>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

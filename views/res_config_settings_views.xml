@@ -118,6 +118,43 @@
                                    placeholder="Use {passenger_name}, {driver_name}, {stop_name}"/>
                         </setting>
                     </block>
+
+                    <block title="🗺️ Route Optimizer" name="route_optimizer_settings">
+                        <setting string="Route Optimizer API">
+                            <div class="text-muted mb-2">
+                                Configure the Route Optimizer service for automatic passenger sequence optimization.
+                            </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_route_optimizer_url" string="API URL"/>
+                                <field name="shuttlebee_route_optimizer_url" 
+                                       placeholder="https://route-optimizer.geniura.com/optimize"
+                                       class="w-100"/>
+                                <div class="text-muted mt-1">
+                                    URL of the Route Optimizer API endpoint
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Optimization Parameters">
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <label for="shuttlebee_route_optimizer_timeout" string="Timeout (seconds)"/>
+                                    <field name="shuttlebee_route_optimizer_timeout" class="w-100"/>
+                                </div>
+                                <div class="col-6">
+                                    <label for="shuttlebee_route_optimizer_max_time" string="Max Solve Time (seconds)"/>
+                                    <field name="shuttlebee_route_optimizer_max_time" class="w-100"/>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_route_optimizer_speed_kmh" string="Average Speed (km/h)"/>
+                                <field name="shuttlebee_route_optimizer_speed_kmh" class="oe_inline"/>
+                                <span class="oe_inline"> km/h</span>
+                                <div class="text-muted mt-1">
+                                    Used for travel time estimation
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>
