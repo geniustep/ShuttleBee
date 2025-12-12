@@ -45,5 +45,16 @@
             <field name="nextcall">1970-01-03 08:00:00</field>
             <field name="active" eval="True"/>
         </record>
+
+        <!-- Auto Confirm Upcoming Trips (default: 60 minutes before start) -->
+        <record id="ir_cron_auto_confirm_upcoming_trips" model="ir.cron">
+            <field name="name">ShuttleBee: Auto Confirm Upcoming Trips</field>
+            <field name="model_id" ref="model_shuttle_trip"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_auto_confirm_upcoming_trips()</field>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

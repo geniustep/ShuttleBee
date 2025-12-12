@@ -26,6 +26,11 @@
                                 <field name="shuttlebee_absent_timeout" class="oe_inline"/>
                                 <span class="oe_inline"> minutes after start to mark absent</span>
                             </div>
+                            <div class="mt-2">
+                                <label for="shuttlebee_auto_confirm_minutes_before_start"/>
+                                <field name="shuttlebee_auto_confirm_minutes_before_start" class="oe_inline"/>
+                                <span class="oe_inline"> minutes before start to auto-confirm draft trips</span>
+                            </div>
                         </setting>
                     </block>
 

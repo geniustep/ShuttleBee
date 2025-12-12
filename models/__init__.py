@@ -14,6 +14,7 @@ from . import shuttle_passenger_group
 from . import shuttle_passenger_group_schedule
 from . import shuttle_passenger_group_holiday
 from . import shuttle_vehicle
+from . import shuttle_vehicle_position
 from . import shuttle_config_helper
 from . import shuttle_gps_position
 from . import res_company

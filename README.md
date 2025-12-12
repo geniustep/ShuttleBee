@@ -169,6 +169,50 @@
 - ✅ **Trip Timeline تلقائي**: كل تغيير حالة أو إرسال إشعار يُسجّل تلقائياً في الـ chatter لتتبع الأحداث
 - ✅ **جاهزية للبوابة والفوترة**: حقول Guardian / Portal Token على الركاب، ومعطيات الفوترة (subscription_price, billing_cycle, is_billable, price) مفعّلة في المجموعات والرحلات
 
+### 📱 Flutter Mobile API (REST) + Live Tracking
+
+تمت إضافة REST endpoints مخصصة للـ Flutter لدعم:
+- **مراقبة حية للرحلات الجارية** (`ongoing`) على الخريطة
+- **تأكيد الرحلة من السائق مع توثيق نقطة التأكيد** (GPS + أقرب Stop + رسالة قصيرة)
+- **تتبع أمني للسائق/المركبة حتى بدون رحلات جارية** (Heartbeat)
+
+#### المصادقة (Authentication)
+
+- ✅ **Session Cookie** (موصى به): جميع endpoints تعمل عبر `auth='user'` وتحتاج جلسة مستخدم Odoo (Cookie `session_id`).
+- ✅ صلاحيات السائق محفوظة عبر Security Groups/Record Rules (السائق يرى رحلاته فقط).
+
+#### Endpoints الجديدة (للـ Flutter)
+
+- **رحلات السائق**
+  - `GET /api/v1/shuttle/trips/my?state=draft|planned|ongoing|done`
+- **تأكيد الرحلة من السائق + توثيق نقطة التأكيد**
+  - `POST /api/v1/shuttle/trips/<trip_id>/confirm`
+  - Body مثال:
+    - `latitude`, `longitude` (اختياري)
+    - `stop_id` (اختياري، إذا لم يُرسل يتم اقتراح أقرب Stop تلقائياً)
+    - `note` (رسالة صغيرة للـ marker)
+- **المراقبة الحية للرحلات الجارية**
+  - `GET /api/v1/shuttle/live/ongoing`
+- **مسار GPS للرحلة**
+  - `GET /api/v1/shuttle/trips/<trip_id>/gps?since=<iso>&limit=500`
+- **Heartbeat (أمان) لموقع السائق/المركبة حتى بدون Trip ongoing**
+  - `POST /api/v1/shuttle/vehicle/position`
+
+#### توثيق التأكيد (Confirmation Audit)
+
+على موديل `shuttle.trip` تمت إضافة حقول:
+- `confirm_source` (driver_app / auto / backend)
+- `confirmed_by_user_id`, `confirmed_at`
+- `confirm_latitude`, `confirm_longitude`
+- `confirm_stop_id` (أقرب نقطة)
+- `confirm_note` (رسالة صغيرة)
+
+#### التأكيد التلقائي قبل بداية الرحلة
+
+تمت إضافة Cron يقوم بتأكيد الرحلات `draft` تلقائياً قبل البداية:
+- إعداد: `shuttlebee.auto_confirm_minutes_before_start` (افتراضي 60 دقيقة)
+- Cron: **ShuttleBee: Auto Confirm Upcoming Trips**
+
 ### 🔢 الحقول المحسوبة والجاهزة للتقارير
 
 - **Shuttle Trip**
@@ -176,6 +220,7 @@
   - `occupancy_rate` (used seats / total seats) مئوية
   - `planned_duration`, `actual_duration`, `delay_minutes` لعرض الأداء مقابل الخطة
   - `current_latitude`, `current_longitude`, `last_gps_update` للتحضير لتتبع GPS اللحظي
+  - `confirm_latitude`, `confirm_longitude`, `confirm_stop_id`, `confirm_note`, `confirmed_at`, `confirm_source` لتوثيق نقطة/مصدر تأكيد الرحلة
 - **Shuttle Passenger Group**: حقل `passenger_count` مخزن لتقليل الحسابات، مع `subscription_price` و`billing_cycle` لسهولة الفوترة
 - **Shuttle Stop**: حقل `usage_count` مخزن ويُحدّث تلقائياً
 - **Shuttle Trip Line**
@@ -183,6 +228,7 @@
   - `boarding_time` و `absence_reason` لتوثيق الصعود والغياب، مع إمكانية تمرير `context={'absence_reason': '...'}`
   - `is_billable`, `price`, `invoice_line_id` لتحضير الفوترة
 - **Shuttle GPS Position**: موديل `shuttle.gps.position` يخزن المسار مع (lat/lon/speed/heading/timestamp) مفهرس حسب الرحلة
+- **Shuttle Vehicle Position (Heartbeat)**: موديل `shuttle.vehicle.position` لتسجيل موقع السائق/المركبة حتى بدون رحلة جارية (حالات الأمان النادرة)
 
 ### 🗺️ تحسين المسارات (Route Optimizer Integration)
 

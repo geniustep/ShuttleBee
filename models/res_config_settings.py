@@ -31,6 +31,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='shuttlebee.absent_timeout',
         default=5
     )
+    shuttlebee_auto_confirm_minutes_before_start = fields.Integer(
+        string='Auto Confirm Trips (Minutes Before Start)',
+        config_parameter='shuttlebee.auto_confirm_minutes_before_start',
+        default=60,
+        help='Automatically confirm Draft trips this many minutes before planned start.'
+    )
 
     # Multi-company
     shuttlebee_company_id = fields.Many2one(
@@ -143,6 +149,7 @@ class ResConfigSettings(models.TransientModel):
         _set_param('shuttlebee.notification_channel', self.shuttlebee_notification_channel)
         _set_param('shuttlebee.approaching_minutes', self.shuttlebee_approaching_minutes)
         _set_param('shuttlebee.absent_timeout', self.shuttlebee_absent_timeout)
+        _set_param('shuttlebee.auto_confirm_minutes_before_start', self.shuttlebee_auto_confirm_minutes_before_start)
         _set_param('shuttlebee.sms_api_url', self.shuttlebee_sms_api_url)
         _set_param('shuttlebee.sms_api_key', self.shuttlebee_sms_api_key)
         _set_param('shuttlebee.whatsapp_provider_type', self.shuttlebee_whatsapp_provider_type)
@@ -176,6 +183,7 @@ class ResConfigSettings(models.TransientModel):
             'shuttlebee_notification_channel': self._get_company_param(self.env, 'shuttlebee.notification_channel', company, 'sms'),
             'shuttlebee_approaching_minutes': int(self._get_company_param(self.env, 'shuttlebee.approaching_minutes', company, 10)),
             'shuttlebee_absent_timeout': int(self._get_company_param(self.env, 'shuttlebee.absent_timeout', company, 5)),
+            'shuttlebee_auto_confirm_minutes_before_start': int(self._get_company_param(self.env, 'shuttlebee.auto_confirm_minutes_before_start', company, 60) or 60),
             'shuttlebee_sms_api_url': self._get_company_param(self.env, 'shuttlebee.sms_api_url', company, ''),
             'shuttlebee_sms_api_key': self._get_company_param(self.env, 'shuttlebee.sms_api_key', company, ''),
             'shuttlebee_whatsapp_provider_type': self._get_company_param(self.env, 'shuttlebee.whatsapp_provider_type', company, 'waha_whatsapp'),

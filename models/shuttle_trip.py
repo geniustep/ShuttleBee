@@ -305,6 +305,54 @@ class ShuttleTrip(models.Model):
         ('cancelled', 'Cancelled')
     ], string='Status', default='draft', required=True, tracking=True, index=True)
 
+    # Confirmation Audit (Driver App / Auto-confirm / Backend)
+    confirm_source = fields.Selection([
+        ('backend', 'Backend (Odoo)'),
+        ('driver_app', 'Driver App'),
+        ('auto', 'Auto-confirm (System)'),
+    ], string='Confirm Source', tracking=True, index=True)
+    confirmed_by_user_id = fields.Many2one(
+        'res.users',
+        string='Confirmed By',
+        readonly=True,
+        tracking=True,
+        index=True,
+        help='User who confirmed this trip (driver app or backend user).'
+    )
+    confirmed_at = fields.Datetime(
+        string='Confirmed At',
+        readonly=True,
+        tracking=True,
+        index=True
+    )
+    confirm_latitude = fields.Float(
+        string='Confirm Latitude',
+        digits=(10, 7),
+        readonly=True,
+        tracking=True,
+        help='GPS latitude captured at the moment of confirmation.'
+    )
+    confirm_longitude = fields.Float(
+        string='Confirm Longitude',
+        digits=(10, 7),
+        readonly=True,
+        tracking=True,
+        help='GPS longitude captured at the moment of confirmation.'
+    )
+    confirm_stop_id = fields.Many2one(
+        'shuttle.stop',
+        string='Confirm Stop',
+        readonly=True,
+        tracking=True,
+        help='Nearest/selected stop at the moment of confirmation.'
+    )
+    confirm_note = fields.Char(
+        string='Confirm Note',
+        readonly=True,
+        tracking=True,
+        help='Short message to display on map marker at confirmation point.'
+    )
+
     # Additional Info
     notes = fields.Text(string='Notes', translate=True)
     color = fields.Integer(string='Color Index', default=0)
@@ -478,9 +526,12 @@ class ShuttleTrip(models.Model):
                 trip.delay_minutes = 0.0
 
     # Methods
-    def action_confirm(self):
-        """Confirm trip and change state to planned"""
+    def _confirm_trip(self, source='backend', latitude=None, longitude=None, stop_id=None, note=None):
+        """Internal confirm helper used by UI, mobile API and cron."""
+        Stop = self.env['shuttle.stop']
         for trip in self:
+            if trip.state != 'draft':
+                raise UserError(_('You can only confirm trips that are in Draft state.'))
             if not trip.group_id:
                 raise UserError(_('Please select a passenger group before confirming the trip.'))
             if not trip.line_ids:
@@ -491,10 +542,63 @@ class ShuttleTrip(models.Model):
                 raise UserError(_('Please set a planned start time before confirming the trip.'))
             if trip.total_seats <= 0:
                 raise UserError(_('Trip must have a positive number of seats.'))
-            
-            trip.write({'state': 'planned'})
-            trip._log_event(_('Trip confirmed and ready to start.'))
+
+            # Optional: infer nearest stop if coordinates provided and stop not provided
+            confirm_stop = False
+            if stop_id:
+                confirm_stop = Stop.browse(int(stop_id))
+                if not confirm_stop.exists():
+                    confirm_stop = False
+            elif latitude is not None and longitude is not None:
+                stop_type = 'pickup' if trip.trip_type == 'pickup' else 'dropoff'
+                try:
+                    suggestions = Stop.suggest_nearest(
+                        latitude=latitude,
+                        longitude=longitude,
+                        limit=1,
+                        stop_type=stop_type,
+                        company_id=trip.company_id.id if trip.company_id else None
+                    )
+                    if suggestions:
+                        confirm_stop = Stop.browse(suggestions[0].get('stop_id'))
+                except Exception:
+                    # Keep confirmation robust; stop inference is best-effort.
+                    confirm_stop = False
+
+            vals = {
+                'state': 'planned',
+                'confirm_source': source or 'backend',
+                'confirmed_by_user_id': self.env.user.id if not self.env.user._is_public() else False,
+                'confirmed_at': fields.Datetime.now(),
+                'confirm_latitude': latitude,
+                'confirm_longitude': longitude,
+                'confirm_stop_id': confirm_stop.id if confirm_stop else False,
+                'confirm_note': note or False,
+            }
+            trip.write(vals)
+
+            # Post a map-friendly marker message in chatter
+            parts = []
+            if vals.get('confirm_note'):
+                parts.append(str(vals['confirm_note']))
+            if confirm_stop:
+                parts.append(_('Stop: %s') % (confirm_stop.name,))
+            if latitude is not None and longitude is not None:
+                parts.append(_('GPS: (%s, %s)') % (latitude, longitude))
+            if source == 'auto':
+                parts.append(_('Source: Auto-confirm (system)'))
+            elif source == 'driver_app':
+                parts.append(_('Source: Driver App'))
+            else:
+                parts.append(_('Source: Backend'))
+
+            trip._log_event(_('Trip confirmed and ready to start. %s') % (' | '.join(parts) if parts else ''))
         return True
+
+    def action_confirm(self):
+        """Confirm trip from backend UI."""
+        return self._confirm_trip(source='backend')
+
 
     def action_start_trip(self):
         """API-friendly start action with summary response"""
@@ -1698,6 +1802,40 @@ class ShuttleTrip(models.Model):
             )
             # Don't raise - allow cron to continue
 
+        return True
+
+    @api.model
+    def _cron_auto_confirm_upcoming_trips(self):
+        """Auto-confirm draft trips N minutes before planned start (default: 60).
+
+        This is intended for cases where drivers do not confirm manually in time.
+        GPS/Stop are typically unknown for auto-confirm, so we only record source and note.
+        """
+        try:
+            IrConfigParam = self.env['ir.config_parameter'].sudo()
+            minutes = int(IrConfigParam.get_param('shuttlebee.auto_confirm_minutes_before_start', 60) or 60)
+            if minutes <= 0:
+                return True
+
+            now = fields.Datetime.now()
+            target = now + timedelta(minutes=minutes)
+
+            trips = self.search([
+                ('state', '=', 'draft'),
+                ('planned_start_time', '<=', target),
+                ('planned_start_time', '>', now),
+            ])
+            if not trips:
+                return True
+
+            # confirm as system; best-effort note
+            for trip in trips.sudo():
+                try:
+                    trip._confirm_trip(source='auto', note=_('Auto-confirmed %s minutes before start') % minutes)
+                except Exception as e:
+                    _logger.error('Auto-confirm failed for trip %s: %s', trip.id, str(e), exc_info=True)
+        except Exception as e:
+            _logger.error('Critical error in _cron_auto_confirm_upcoming_trips: %s', str(e), exc_info=True)
         return True
 
     @api.model

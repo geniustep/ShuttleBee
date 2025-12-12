@@ -71,6 +71,7 @@ Version 2.0.0 Improvements:
     'data': [
         # Security
         'security/shuttle_security.xml',
+        'security/shuttle_vehicle_position_security.xml',
         'security/ir.model.access.csv',
 
         # Data
