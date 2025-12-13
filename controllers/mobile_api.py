@@ -80,12 +80,19 @@ class ShuttleBeeMobileAPI(http.Controller):
             # Convert Response into dict for JSON route
             return {'success': False, 'error': 'User is not a driver'}
 
-        # Odoo 18: use get_json_data() instead of jsonrequest
-        try:
-            payload = request.get_json_data() or {}
-        except AttributeError:
-            # Fallback for older Odoo versions
-            payload = getattr(request, 'jsonrequest', None) or kwargs or {}
+        # Odoo 18 type='json' routes: params are passed as kwargs directly
+        # For direct JSON body requests, try get_json_data() as fallback
+        payload = kwargs
+        if not payload or (not payload.get('latitude') and not payload.get('stop_id')):
+            try:
+                json_data = request.get_json_data() or {}
+                # Handle JSON-RPC wrapper if present
+                if 'params' in json_data:
+                    payload = json_data.get('params', {})
+                elif json_data:
+                    payload = json_data
+            except (AttributeError, Exception):
+                pass
         
         latitude = payload.get('latitude')
         longitude = payload.get('longitude')
@@ -187,12 +194,19 @@ class ShuttleBeeMobileAPI(http.Controller):
         if err:
             return {'success': False, 'error': 'User is not a driver'}
 
-        # Odoo 18: use get_json_data() instead of jsonrequest
-        try:
-            data = request.get_json_data() or {}
-        except AttributeError:
-            # Fallback for older Odoo versions
-            data = getattr(request, 'jsonrequest', None) or kwargs or {}
+        # Odoo 18 type='json' routes: params are passed as kwargs directly
+        # For direct JSON body requests, try get_json_data() as fallback
+        data = kwargs
+        if not data.get('vehicle_id'):
+            try:
+                json_data = request.get_json_data() or {}
+                # Handle JSON-RPC wrapper if present
+                if 'params' in json_data:
+                    data = json_data.get('params', {})
+                elif json_data:
+                    data = json_data
+            except (AttributeError, Exception):
+                pass
         
         vehicle_id = data.get('vehicle_id')
         if not vehicle_id:
@@ -204,9 +218,13 @@ class ShuttleBeeMobileAPI(http.Controller):
 
         # Normalize GPS
         try:
-            latitude = float(data.get('latitude'))
-            longitude = float(data.get('longitude'))
-        except Exception:
+            lat_val = data.get('latitude')
+            lon_val = data.get('longitude')
+            if lat_val is None or lon_val is None:
+                return {'success': False, 'error': 'Invalid latitude/longitude'}
+            latitude = float(lat_val)
+            longitude = float(lon_val)
+        except (TypeError, ValueError):
             return {'success': False, 'error': 'Invalid latitude/longitude'}
 
         vals = {
