@@ -80,7 +80,13 @@ class ShuttleBeeMobileAPI(http.Controller):
             # Convert Response into dict for JSON route
             return {'success': False, 'error': 'User is not a driver'}
 
-        payload = request.jsonrequest or {}
+        # Odoo 18: use get_json_data() instead of jsonrequest
+        try:
+            payload = request.get_json_data() or {}
+        except AttributeError:
+            # Fallback for older Odoo versions
+            payload = getattr(request, 'jsonrequest', None) or kwargs or {}
+        
         latitude = payload.get('latitude')
         longitude = payload.get('longitude')
         stop_id = payload.get('stop_id')
@@ -181,7 +187,13 @@ class ShuttleBeeMobileAPI(http.Controller):
         if err:
             return {'success': False, 'error': 'User is not a driver'}
 
-        data = request.jsonrequest or {}
+        # Odoo 18: use get_json_data() instead of jsonrequest
+        try:
+            data = request.get_json_data() or {}
+        except AttributeError:
+            # Fallback for older Odoo versions
+            data = getattr(request, 'jsonrequest', None) or kwargs or {}
+        
         vehicle_id = data.get('vehicle_id')
         if not vehicle_id:
             return {'success': False, 'error': 'Missing vehicle_id'}
