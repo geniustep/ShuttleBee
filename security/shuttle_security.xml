@@ -151,6 +151,20 @@
             <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
         </record>
 
+        <record id="shuttle_passenger_group_holiday_comp_rule" model="ir.rule">
+            <field name="name">Passenger Group Holiday: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_passenger_group_holiday"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+
+        <record id="shuttle_holiday_comp_rule" model="ir.rule">
+            <field name="name">Shuttle Holiday: Multi-Company</field>
+            <field name="model_id" ref="model_shuttle_holiday"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
+        </record>
+
         <!-- Shuttle Stop Rules -->
         <record id="shuttle_stop_rule_base_user" model="ir.rule">
             <field name="name">Stop: Base User - Read All</field>

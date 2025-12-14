@@ -283,5 +283,99 @@
         <field name="context">{'default_trip_type': 'both'}</field>
     </record>
 
+    <!-- Global Shuttle Holidays (Standalone) -->
+    <record id="view_shuttle_holiday_tree" model="ir.ui.view">
+        <field name="name">shuttle.holiday.tree</field>
+        <field name="model">shuttle.holiday</field>
+        <field name="arch" type="xml">
+            <list string="Holidays" decoration-muted="not active">
+                <field name="name"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="active"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_shuttle_holiday_form" model="ir.ui.view">
+        <field name="name">shuttle.holiday.form</field>
+        <field name="model">shuttle.holiday</field>
+        <field name="arch" type="xml">
+            <form string="Holiday">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="active"/>
+                    </group>
+                    <group>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                    <group>
+                        <field name="start_date"/>
+                        <field name="end_date"/>
+                    </group>
+                    <group>
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_shuttle_holiday" model="ir.actions.act_window">
+        <field name="name">Holidays</field>
+        <field name="res_model">shuttle.holiday</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Passenger Group Holidays / Exceptions (Standalone) -->
+    <record id="view_shuttle_passenger_group_holiday_tree" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.holiday.tree</field>
+        <field name="model">shuttle.passenger.group.holiday</field>
+        <field name="arch" type="xml">
+            <list string="Holidays / Exceptions" decoration-muted="not active">
+                <field name="name"/>
+                <field name="group_id"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="active"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_shuttle_passenger_group_holiday_form" model="ir.ui.view">
+        <field name="name">shuttle.passenger.group.holiday.form</field>
+        <field name="model">shuttle.passenger.group.holiday</field>
+        <field name="arch" type="xml">
+            <form string="Holiday / Exception">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="active"/>
+                    </group>
+                    <group>
+                        <field name="group_id" required="1"/>
+                        <field name="company_id" readonly="1" groups="base.group_multi_company"/>
+                    </group>
+                    <group>
+                        <field name="start_date"/>
+                        <field name="end_date"/>
+                    </group>
+                    <group>
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_shuttle_passenger_group_holiday" model="ir.actions.act_window">
+        <field name="name">Holidays / Exceptions</field>
+        <field name="res_model">shuttle.passenger.group.holiday</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
 </odoo>
 

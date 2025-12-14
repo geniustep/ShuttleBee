@@ -13,6 +13,7 @@ from . import res_config_settings
 from . import shuttle_passenger_group
 from . import shuttle_passenger_group_schedule
 from . import shuttle_passenger_group_holiday
+from . import shuttle_holiday
 from . import shuttle_vehicle
 from . import shuttle_vehicle_position
 from . import shuttle_config_helper

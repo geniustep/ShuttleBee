@@ -30,6 +30,20 @@
               action="action_shuttle_passenger_group"
               sequence="30"/>
 
+    <menuitem id="menu_shuttle_holidays"
+              name="Holidays"
+              parent="menu_shuttle_operations"
+              action="action_shuttle_holiday"
+              sequence="40"
+              groups="group_shuttle_dispatcher"/>
+
+    <menuitem id="menu_shuttle_group_exceptions"
+              name="Group Exceptions"
+              parent="menu_shuttle_operations"
+              action="action_shuttle_passenger_group_holiday"
+              sequence="45"
+              groups="group_shuttle_dispatcher"/>
+
     <menuitem id="menu_shuttle_passenger_distribution"
               name="Passenger Distribution"
               parent="menu_shuttle_operations"

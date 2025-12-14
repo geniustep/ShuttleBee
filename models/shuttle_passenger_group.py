@@ -708,6 +708,15 @@ class ShuttlePassengerGroup(models.Model):
             days_remaining = 7 - start_dt.weekday()
             total_days = min(total_days, days_remaining)
 
+        # Global holidays (company-level) also block trip generation for ALL groups.
+        end_dt = start_dt + timedelta(days=total_days - 1) if total_days else start_dt
+        global_holidays = self.env['shuttle.holiday'].search([
+            ('active', '=', True),
+            ('company_id', '=', self.company_id.id),
+            ('start_date', '<=', end_dt),
+            ('end_date', '>=', start_dt),
+        ])
+
         for offset in range(total_days):
             current_date = start_dt + timedelta(days=offset)
             weekday_int = current_date.weekday()
@@ -715,6 +724,9 @@ class ShuttlePassengerGroup(models.Model):
                 lambda l: WEEKDAY_TO_INT.get(l.weekday) == weekday_int
             )
             if not day_lines:
+                continue
+            # Skip if date inside global holiday
+            if global_holidays.filtered(lambda h: h.start_date <= current_date <= h.end_date):
                 continue
             # Skip if date inside holiday
             if active_holidays.filtered(lambda h: h.start_date <= current_date <= h.end_date):
