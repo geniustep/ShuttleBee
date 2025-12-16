@@ -316,7 +316,7 @@ class ShuttleTripLine(models.Model):
 
     def action_mark_absent(self):
         """Mark passenger as absent"""
-        self._ensure_trip_state(['planned', 'ongoing'], _('mark passenger as absent'))
+        self._ensure_trip_state(['draft', 'planned', 'ongoing'], _('mark passenger as absent'))
         updates = []
         reason = self.env.context.get('absence_reason')
         for line in self:
