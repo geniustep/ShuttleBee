@@ -57,10 +57,10 @@ class ShuttleTrip(models.Model):
     group_id = fields.Many2one(
         'shuttle.passenger.group',
         string='Passenger Group',
-        required=True,
+        required=False,
         tracking=True,
-        ondelete='restrict',
-        help='Group template used to generate this trip. Passengers will be loaded automatically from this group.'
+        ondelete='set null',
+        help='Optional: Group template used to generate this trip. Passengers can be loaded automatically from this group, or added manually.'
     )
 
     # Date & Time
@@ -375,12 +375,10 @@ class ShuttleTrip(models.Model):
                 raise ValidationError(_('Trip seats (%s) cannot exceed vehicle capacity (%s).') % (
                     trip.total_seats, vehicle.seat_capacity))
     
-    @api.constrains('group_id', 'line_ids')
-    def _check_group_required(self):
-        """Ensure trip has a group and passengers come from group"""
+    @api.constrains('line_ids', 'state')
+    def _check_passengers_required(self):
+        """Ensure trip has passengers before confirmation"""
         for trip in self:
-            if not trip.group_id:
-                raise ValidationError(_('Passenger Group is required for all trips!'))
             if trip.state != 'draft' and not trip.line_ids:
                 raise ValidationError(_('Trip must have at least one passenger before confirmation!'))
 
@@ -532,8 +530,6 @@ class ShuttleTrip(models.Model):
         for trip in self:
             if trip.state != 'draft':
                 raise UserError(_('You can only confirm trips that are in Draft state.'))
-            if not trip.group_id:
-                raise UserError(_('Please select a passenger group before confirming the trip.'))
             if not trip.line_ids:
                 raise UserError(_('You need at least one passenger before confirming the trip.'))
             if not trip.driver_id:
@@ -1469,7 +1465,7 @@ class ShuttleTrip(models.Model):
 
     @api.onchange('group_id')
     def _onchange_group_id(self):
-        """Load passengers from selected group"""
+        """Load passengers from selected group (if group is selected)"""
         for trip in self:
             if trip.group_id:
                 # Set default values from group
@@ -1485,6 +1481,7 @@ class ShuttleTrip(models.Model):
                     line_vals = trip.group_id._prepare_trip_line_values(trip_type=trip.trip_type)
                     # We'll create lines after save, but show them in UI
                     trip.line_ids = [(0, 0, vals) for vals in line_vals]
+            # If no group is selected, passengers can still be added manually
 
     # Service Helpers
     def _prepare_trip_datetime(self, value, field_name):

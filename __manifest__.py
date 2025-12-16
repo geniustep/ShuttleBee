@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ShuttleBee - Shuttle Management',
-    'version': '18.0.2.3.2',
+    'version': '18.0.2.3.3',
     'category': 'Operations/Transportation',
     'summary': 'Manage shuttle transportation services with drivers, passengers, and real-time tracking',
     'description': """

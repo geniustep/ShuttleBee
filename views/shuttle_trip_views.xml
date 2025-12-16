@@ -97,8 +97,7 @@
                             <field name="date"/>
                             <field name="group_id"
                                    options="{'no_create': True}"
-                                   context="{'default_trip_type': trip_type}"
-                                   required="1"/>
+                                   context="{'default_trip_type': trip_type}"/>
                             <field name="driver_id"
                                    options="{'no_create': True, 'no_open': True}"/>
                             <field name="vehicle_id"
