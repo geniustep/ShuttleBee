@@ -68,6 +68,33 @@
                                help="Required if GPS coordinates are not used. Override company GPS coordinates with a specific stop."/>
                     </group>
                     
+                    <group string="Guardian Information" invisible="not is_shuttle_passenger">
+                        <field name="has_guardian"/>
+                        <group string="Father Information" invisible="not has_guardian">
+                            <field name="father_name" string="Father Name"/>
+                            <field name="father_phone" string="Father Phone"/>
+                        </group>
+                        <group string="Mother Information" invisible="not has_guardian">
+                            <field name="mother_name" string="Mother Name"/>
+                            <field name="mother_phone" string="Mother Phone"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Temporary/Secondary Address" invisible="not is_shuttle_passenger">
+                        <field name="temporary_address" nolabel="1"
+                               placeholder="Enter temporary or secondary address..."/>
+                        <field name="temporary_latitude"
+                               help="GPS latitude for temporary/secondary location"/>
+                        <field name="temporary_longitude"
+                               help="GPS longitude for temporary/secondary location"/>
+                        <field name="temporary_contact_name"
+                               string="Contact Name"
+                               help="Name of contact person related to this temporary/secondary address"/>
+                        <field name="temporary_contact_phone"
+                               string="Contact Phone"
+                               help="Phone number of contact person related to this temporary/secondary address"/>
+                    </group>
+                    
                     <group string="Shuttle Notes" invisible="not is_shuttle_passenger">
                         <field name="shuttle_notes" nolabel="1"
                                placeholder="Special requirements or notes for transportation..."/>

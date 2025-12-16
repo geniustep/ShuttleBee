@@ -965,6 +965,8 @@ class ShuttlePassengerGroupLine(models.Model):
     _description = 'Passenger Group Member'
     _order = 'sequence, id'
 
+    active = fields.Boolean(default=True)
+
     group_id = fields.Many2one(
         'shuttle.passenger.group',
         string='Group',
@@ -1028,9 +1030,15 @@ class ShuttlePassengerGroupLine(models.Model):
         store=False,
         readonly=True
     )
-    guardian_phone = fields.Char(
-        string='Guardian Phone',
-        related='passenger_id.guardian_phone',
+    father_phone = fields.Char(
+        string='Father Phone',
+        related='passenger_id.father_phone',
+        store=False,
+        readonly=True
+    )
+    mother_phone = fields.Char(
+        string='Mother Phone',
+        related='passenger_id.mother_phone',
         store=False,
         readonly=True
     )
@@ -1121,13 +1129,13 @@ class ShuttlePassengerGroupLine(models.Model):
         all_passenger_ids = set(all_passengers.ids)
         _logger.info('_sync_unassigned_passengers: Found %d shuttle passengers', len(all_passenger_ids))
         
-        # Get passengers who ARE assigned to a group (have a record with group_id != False)
-        assigned_lines = self.search([('group_id', '!=', False)])
+        # Get passengers who ARE assigned to a group (active lines with group_id != False)
+        assigned_lines = self.search([('active', '=', True), ('group_id', '!=', False)])
         assigned_passenger_ids = set(assigned_lines.mapped('passenger_id.id'))
         _logger.info('_sync_unassigned_passengers: %d passengers are assigned to groups', len(assigned_passenger_ids))
         
-        # Get passengers who already have an unassigned record (group_id = False)
-        unassigned_lines = self.search([('group_id', '=', False)])
+        # Get passengers who already have an unassigned record (active lines with group_id = False)
+        unassigned_lines = self.search([('active', '=', True), ('group_id', '=', False)])
         unassigned_passenger_ids = set(unassigned_lines.mapped('passenger_id.id'))
         _logger.info('_sync_unassigned_passengers: %d passengers already have unassigned records', len(unassigned_passenger_ids))
         
@@ -1144,22 +1152,22 @@ class ShuttlePassengerGroupLine(models.Model):
             self.create(lines_to_create)
             _logger.info('Auto-created %d unassigned passenger records', len(lines_to_create))
         
-        # Clean up: Remove unassigned records for passengers who are now assigned to a group
-        # (they were moved from unassigned to a group, but the unassigned record wasn't deleted)
+        # Clean up: Archive unassigned records for passengers who are now assigned to a group
+        # (avoid unlink to prevent "missing record" errors from bookmarked URLs / cached views)
         orphan_unassigned = unassigned_lines.filtered(
             lambda l: l.passenger_id.id in assigned_passenger_ids
         )
         if orphan_unassigned:
-            orphan_unassigned.unlink()
-            _logger.info('Removed %d orphan unassigned records (passengers now in groups)', len(orphan_unassigned))
+            orphan_unassigned.write({'active': False})
+            _logger.info('Archived %d orphan unassigned records (passengers now in groups)', len(orphan_unassigned))
         
-        # Clean up: Remove unassigned records for passengers who are no longer shuttle passengers
+        # Clean up: Archive unassigned records for passengers who are no longer shuttle passengers
         invalid_unassigned = unassigned_lines.filtered(
             lambda l: l.passenger_id.id not in all_passenger_ids
         )
         if invalid_unassigned:
-            invalid_unassigned.unlink()
-            _logger.info('Removed %d invalid unassigned records (passengers deleted)', len(invalid_unassigned))
+            invalid_unassigned.write({'active': False})
+            _logger.info('Archived %d invalid unassigned records (passengers deleted)', len(invalid_unassigned))
 
     def write(self, vals):
         """Handle group_id changes when moving passengers between groups via Kanban drag & drop"""
@@ -1214,22 +1222,31 @@ class ShuttlePassengerGroupLine(models.Model):
             ('is_shuttle_passenger', '=', True)
         ])
         
-        # Get passengers who ARE assigned to a group (have a record with group_id != False)
-        assigned_lines = self.search([('group_id', '!=', False)])
+        # Get passengers who ARE assigned to a group (active lines only)
+        assigned_lines = self.search([('active', '=', True), ('group_id', '!=', False)])
         assigned_passenger_ids = set(assigned_lines.mapped('passenger_id.id'))
         
-        # Get passengers who already have an unassigned record
-        unassigned_lines = self.search([('group_id', '=', False)])
+        # Get passengers who already have an unassigned record (active)
+        unassigned_lines = self.search([('active', '=', True), ('group_id', '=', False)])
         unassigned_passenger_ids = set(unassigned_lines.mapped('passenger_id.id'))
+
+        # Reactivate archived unassigned records if passenger is still unassigned
+        archived_unassigned = self.search([('active', '=', False), ('group_id', '=', False)])
+        archived_by_passenger = {l.passenger_id.id: l for l in archived_unassigned if l.passenger_id}
         
-        # Find passengers who need an unassigned record
+        # Find passengers who need an unassigned record (or can be reactivated)
         lines_to_create = []
         for passenger in all_passengers:
             # Skip if already assigned to a group
             if passenger.id in assigned_passenger_ids:
                 continue
-            # Skip if already has an unassigned record
+            # Skip if already has an active unassigned record
             if passenger.id in unassigned_passenger_ids:
+                continue
+            # If there's an archived unassigned record, reactivate it
+            archived = archived_by_passenger.get(passenger.id)
+            if archived:
+                archived.write({'active': True})
                 continue
             lines_to_create.append({
                 'passenger_id': passenger.id,

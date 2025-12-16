@@ -30,7 +30,8 @@
                 <field name="company_id"/>
                 <field name="passenger_phone"/>
                 <field name="passenger_mobile"/>
-                <field name="guardian_phone"/>
+                <field name="father_phone"/>
+                <field name="mother_phone"/>
                 <templates>
                     <t t-name="kanban-header">
                         <div class="o_kanban_header">
@@ -62,9 +63,13 @@
                                     <i class="fa fa-phone"/> 
                                     <span t-esc="record.passenger_phone.value || record.passenger_mobile.value || ''"/>
                                 </div>
-                                <div t-if="record.guardian_phone.raw_value" class="mb-2">
-                                    <i class="fa fa-user"/> 
-                                    <span t-esc="record.guardian_phone.value || ''"/>
+                                <div t-if="record.father_phone.raw_value" class="mb-2">
+                                    <i class="fa fa-male"/> 
+                                    <strong>الأب:</strong> <span t-esc="record.father_phone.value || ''"/>
+                                </div>
+                                <div t-if="record.mother_phone.raw_value" class="mb-2">
+                                    <i class="fa fa-female"/> 
+                                    <strong>الأم:</strong> <span t-esc="record.mother_phone.value || ''"/>
                                 </div>
                                 <div t-if="record.pickup_info_display.raw_value" class="mb-1">
                                     <i class="fa fa-map-marker text-primary"/> 
@@ -167,11 +172,13 @@
                 <field name="group_id"/>
                 <field name="pickup_stop_id"/>
                 <field name="dropoff_stop_id"/>
+                <field name="active"/>
                 <separator/>
                 <filter string="المجموعات النشطة والغير مدرجين" name="active_groups"
                         domain="['|', ('group_id', '=', False), ('group_id.active', '=', True)]"/>
                 <filter string="غير مدرجين فقط" name="unassigned_only"
                         domain="[('group_id', '=', False)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Group" name="group_by_group"
                             context="{'group_by': 'group_id'}"/>

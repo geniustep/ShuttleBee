@@ -96,16 +96,50 @@ class ResPartner(models.Model):
         digits=(10, 7),
         help='GPS longitude for custom pickup location'
     )
-    guardian_id = fields.Many2one(
-        'res.partner',
-        string='Guardian / Parent',
-        help='Primary guardian responsible for this passenger.'
+    has_guardian = fields.Boolean(
+        string='Has Guardian',
+        default=False,
+        help='Enable if this passenger has a guardian'
     )
-    guardian_phone = fields.Char(
-        string='Guardian Phone'
+    father_name = fields.Char(
+        string='Father Name',
+        help='Name of the father'
     )
-    guardian_email = fields.Char(
-        string='Guardian Email'
+    father_phone = fields.Char(
+        string='Father Phone',
+        help='Phone number of the father'
+    )
+    mother_name = fields.Char(
+        string='Mother Name',
+        help='Name of the mother'
+    )
+    mother_phone = fields.Char(
+        string='Mother Phone',
+        help='Phone number of the mother'
+    )
+    
+    # Temporary/Secondary Address
+    temporary_address = fields.Text(
+        string='Temporary/Secondary Address',
+        help='Temporary or secondary address for this passenger'
+    )
+    temporary_latitude = fields.Float(
+        string='Temporary Latitude',
+        digits=(10, 7),
+        help='GPS latitude for temporary/secondary location'
+    )
+    temporary_longitude = fields.Float(
+        string='Temporary Longitude',
+        digits=(10, 7),
+        help='GPS longitude for temporary/secondary location'
+    )
+    temporary_contact_name = fields.Char(
+        string='Temporary Address Contact Name',
+        help='Name of contact person related to this temporary/secondary address'
+    )
+    temporary_contact_phone = fields.Char(
+        string='Temporary Address Contact Phone',
+        help='Phone number of contact person related to this temporary/secondary address'
     )
     portal_access_token = fields.Char(
         string='Portal Access Token',
@@ -146,27 +180,27 @@ class ResPartner(models.Model):
                 partner.portal_access_token = uuid.uuid4().hex
 
     def action_send_portal_invitation(self):
-        """Prepare to send a portal invitation email to the guardian"""
+        """Prepare to send a portal invitation to the guardian (via SMS/WhatsApp)"""
         for partner in self:
-            if not partner.guardian_email:
+            # Get guardian information (prefer father, then mother)
+            guardian_name = None
+            guardian_phone = None
+            
+            if partner.father_phone:
+                guardian_name = partner.father_name or _('Father')
+                guardian_phone = partner.father_phone
+            elif partner.mother_phone:
+                guardian_name = partner.mother_name or _('Mother')
+                guardian_phone = partner.mother_phone
+            
+            if not guardian_phone:
                 raise ValidationError(
-                    _('Please set a guardian email before sending an invitation.')
+                    _('Please set guardian phone number (father or mother) before sending an invitation.')
                 )
+            
             partner._ensure_portal_token()
-            body = _(
-                'Hello %(guardian)s,<br/><br/>'
-                'You can access the ShuttleBee portal to follow %(student)s using the following token: <b>%(token)s</b>.<br/>'
-                'A dedicated portal interface will be available soon.<br/><br/>'
-                'Best regards,<br/>ShuttleBee'
-            ) % {
-                'guardian': partner.guardian_id.name or partner.guardian_email,
-                'student': partner.name,
-                'token': partner.portal_access_token,
-            }
-            mail_values = {
-                'subject': _('ShuttleBee Portal Invitation'),
-                'body_html': body,
-                'email_to': partner.guardian_email,
-                'email_from': partner.company_id.email or self.env.user.email or 'noreply@example.com',
-            }
-            self.env['mail.mail'].create(mail_values).send()
+            # Note: This function can be extended to send SMS/WhatsApp instead of email
+            # For now, it generates the token but requires email integration for actual sending
+            raise ValidationError(
+                _('Portal invitation via SMS/WhatsApp will be available soon. Token generated: %s') % partner.portal_access_token
+            )
