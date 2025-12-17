@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Companion and Dispatcher Rules - Loaded after model update -->
+        
+        <!-- Update Trip Rules to include companion -->
+        <record id="shuttle_trip_rule_user" model="ir.rule">
+            <field name="name">Shuttle Trip: User - Own Only</field>
+            <field name="model_id" ref="model_shuttle_trip"/>
+            <field name="domain_force">['|', '|', ('line_ids.passenger_id.user_ids', 'in', user.id), ('driver_id', '=', user.id), ('companion_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_trip_rule_driver" model="ir.rule">
+            <field name="name">Shuttle Trip: Driver - Own Trips</field>
+            <field name="model_id" ref="model_shuttle_trip"/>
+            <field name="domain_force">['|', ('driver_id', '=', user.id), ('companion_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_driver'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_trip_rule_dispatcher" model="ir.rule">
+            <field name="name">Shuttle Trip: Dispatcher - Own Groups</field>
+            <field name="model_id" ref="model_shuttle_trip"/>
+            <field name="domain_force">['|', ('group_id.dispatcher_id', '=', user.id), ('group_id.dispatcher_group_ids', 'in', [user.id])]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_dispatcher'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Update Trip Line Rules to include companion -->
+        <record id="shuttle_trip_line_rule_driver" model="ir.rule">
+            <field name="name">Trip Line: Driver</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="domain_force">['|', ('trip_id.driver_id', '=', user.id), ('trip_id.companion_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_driver'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_trip_line_rule_dispatcher" model="ir.rule">
+            <field name="name">Trip Line: Dispatcher</field>
+            <field name="model_id" ref="model_shuttle_trip_line"/>
+            <field name="domain_force">['|', ('trip_id.group_id.dispatcher_id', '=', user.id), ('trip_id.group_id.dispatcher_group_ids', 'in', [user.id])]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_dispatcher'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Update Notification Rules to include companion -->
+        <record id="shuttle_notification_rule_driver" model="ir.rule">
+            <field name="name">Notification: Driver</field>
+            <field name="model_id" ref="model_shuttle_notification"/>
+            <field name="domain_force">['|', ('trip_id.driver_id', '=', user.id), ('trip_id.companion_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_driver'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_notification_rule_dispatcher" model="ir.rule">
+            <field name="name">Notification: Dispatcher</field>
+            <field name="model_id" ref="model_shuttle_notification"/>
+            <field name="domain_force">['|', ('trip_id.group_id.dispatcher_id', '=', user.id), ('trip_id.group_id.dispatcher_group_ids', 'in', [user.id])]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_dispatcher'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <!-- Passenger Group Rules -->
+        <record id="shuttle_passenger_group_rule_dispatcher" model="ir.rule">
+            <field name="name">Passenger Group: Dispatcher - Own or Authorized</field>
+            <field name="model_id" ref="model_shuttle_passenger_group"/>
+            <field name="domain_force">['|', ('dispatcher_id', '=', user.id), ('dispatcher_group_ids', 'in', [user.id])]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_dispatcher'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="shuttle_passenger_group_rule_manager" model="ir.rule">
+            <field name="name">Passenger Group: Manager - All</field>
+            <field name="model_id" ref="model_shuttle_passenger_group"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_shuttle_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+        
+    </data>
+</odoo>

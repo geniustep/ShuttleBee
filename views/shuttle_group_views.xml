@@ -11,6 +11,7 @@
                 <field name="name"/>
                 <field name="trip_type" widget="badge"/>
                 <field name="driver_id"/>
+                <field name="companion_id"/>
                 <field name="vehicle_id"/>
                 <field name="member_count"/>
                 <field name="total_seats"/>
@@ -76,6 +77,7 @@
                                    help="Common destination (e.g., School, Office). Will be used automatically for passengers without a specific stop."/>
                             <field name="vehicle_id"/>
                             <field name="driver_id"/>
+                            <field name="companion_id"/>
                             <field name="total_seats"/>
                         </group>
                         <group string="Additional Information">
@@ -83,6 +85,10 @@
                             <field name="color"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="active"/>
+                        </group>
+                        <group string="Dispatcher Access" groups="shuttlebee.group_shuttle_manager">
+                            <field name="dispatcher_id" readonly="1"/>
+                            <field name="dispatcher_group_ids" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
                     </group>
                     <group>

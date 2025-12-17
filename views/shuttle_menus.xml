@@ -70,10 +70,19 @@
               sequence="20"
               groups="group_shuttle_dispatcher"/>
 
+    <!-- ShuttleBee Settings Action -->
+    <record id="action_shuttlebee_res_config_settings_window" model="ir.actions.act_window">
+        <field name="name">ShuttleBee Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'shuttlebee', 'default_module': 'shuttlebee', 'bin_size': False, 'open_tab': 'shuttlebee', 'active_id': False}</field>
+    </record>
+
     <menuitem id="menu_shuttle_settings"
               name="Settings"
               parent="menu_shuttle_configuration"
-              action="base.res_config_setting_act_window"
+              action="action_shuttlebee_res_config_settings_window"
               sequence="99"
               groups="group_shuttle_manager"/>
 

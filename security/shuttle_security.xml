@@ -144,6 +144,7 @@
             <field name="groups" eval="[(4, ref('base.group_multi_company'))]"/>
         </record>
 
+
         <record id="shuttle_passenger_group_comp_rule" model="ir.rule">
             <field name="name">Passenger Group: Multi-Company</field>
             <field name="model_id" ref="model_shuttle_passenger_group"/>

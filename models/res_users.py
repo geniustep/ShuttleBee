@@ -14,6 +14,15 @@ class ResUsers(models.Model):
         ('none', 'No ShuttleBee Access'),
     ], string='ShuttleBee Role', compute='_compute_shuttle_role', store=True, readonly=True,
        help='User role in ShuttleBee system based on assigned groups')
+    
+    shuttle_dispatcher_group_ids = fields.Many2many(
+        'shuttle.passenger.group',
+        'shuttle_group_dispatcher_rel',
+        'user_id',
+        'group_id',
+        string='Authorized Passenger Groups',
+        help='Passenger groups this dispatcher has permission to view and manage.'
+    )
 
     @api.depends('groups_id')
     def _compute_shuttle_role(self):

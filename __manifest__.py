@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ShuttleBee - Shuttle Management',
-    'version': '18.0.2.3.3',
+    'version': '18.0.2.4.0',
     'category': 'Operations/Transportation',
     'summary': 'Manage shuttle transportation services with drivers, passengers, and real-time tracking',
     'description': """
@@ -73,6 +73,8 @@ Version 2.0.0 Improvements:
         'security/shuttle_security.xml',
         'security/shuttle_vehicle_position_security.xml',
         'security/ir.model.access.csv',
+        # Security rules for companion and dispatcher (loaded after model update)
+        'security/shuttle_security_companion_dispatcher.xml',
 
         # Data
         'data/ir_sequence_data.xml',

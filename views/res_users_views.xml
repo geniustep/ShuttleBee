@@ -34,6 +34,14 @@
                         The role above is automatically calculated based on your ShuttleBee group membership.
                         To change the role, modify the groups in the "Access Rights" tab below.
                     </div>
+                    <separator string="Dispatcher Groups" colspan="2" 
+                               invisible="shuttle_role != 'dispatcher'"/>
+                    <field name="shuttle_dispatcher_group_ids" 
+                           widget="many2many_tags"
+                           options="{'no_create': True}"
+                           invisible="shuttle_role != 'dispatcher'"
+                           colspan="2"
+                           help="Passenger groups this dispatcher has permission to view and manage. Only visible for Dispatchers."/>
                 </group>
             </xpath>
             

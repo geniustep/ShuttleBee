@@ -38,7 +38,8 @@ class ShuttleBeeMobileAPI(http.Controller):
             return err
 
         state = kwargs.get('state')
-        domain = [('driver_id', '=', env.user.id)]
+        # Driver or companion can see their trips
+        domain = ['|', ('driver_id', '=', env.user.id), ('companion_id', '=', env.user.id)]
         if state:
             domain.append(('state', '=', state))
         trips = env['shuttle.trip'].search(domain, order='planned_start_time asc')
@@ -54,9 +55,15 @@ class ShuttleBeeMobileAPI(http.Controller):
                 'state': t.state,
                 'planned_start_time': t.planned_start_time.isoformat() if t.planned_start_time else None,
                 'planned_arrival_time': t.planned_arrival_time.isoformat() if t.planned_arrival_time else None,
+                'driver_id': t.driver_id.id if t.driver_id else None,
+                'driver_name': t.driver_id.name if t.driver_id else None,
+                'companion_id': t.companion_id.id if t.companion_id else None,
+                'companion_name': t.companion_id.name if t.companion_id else None,
                 'vehicle_id': t.vehicle_id.id if t.vehicle_id else None,
                 'vehicle_name': t.vehicle_id.name if t.vehicle_id else None,
                 'vehicle_plate': t.vehicle_id.license_plate if t.vehicle_id else None,
+                'group_id': t.group_id.id if t.group_id else None,
+                'group_name': t.group_id.name if t.group_id else None,
                 'passenger_count': t.passenger_count,
                 'current_latitude': t.current_latitude,
                 'current_longitude': t.current_longitude,
@@ -103,7 +110,8 @@ class ShuttleBeeMobileAPI(http.Controller):
         if not trip.exists():
             return {'success': False, 'error': 'Trip not found'}
 
-        if trip.driver_id.id != env.user.id:
+        # Driver or companion can confirm the trip
+        if trip.driver_id.id != env.user.id and (not trip.companion_id or trip.companion_id.id != env.user.id):
             return {'success': False, 'error': 'Not authorized'}
 
         # Normalize GPS
@@ -139,6 +147,8 @@ class ShuttleBeeMobileAPI(http.Controller):
                 'trip_type': t.trip_type,
                 'driver_id': t.driver_id.id if t.driver_id else None,
                 'driver_name': t.driver_id.name if t.driver_id else None,
+                'companion_id': t.companion_id.id if t.companion_id else None,
+                'companion_name': t.companion_id.name if t.companion_id else None,
                 'vehicle_id': t.vehicle_id.id if t.vehicle_id else None,
                 'vehicle_name': t.vehicle_id.name if t.vehicle_id else None,
                 'vehicle_plate': t.vehicle_id.license_plate if t.vehicle_id else None,

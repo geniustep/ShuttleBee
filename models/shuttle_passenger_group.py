@@ -26,6 +26,12 @@ class ShuttlePassengerGroup(models.Model):
         string='Default Driver',
         tracking=True
     )
+    companion_id = fields.Many2one(
+        'res.users',
+        string='Companion / Attendant',
+        tracking=True,
+        help='Companion/attendant for passengers with same permissions as driver.'
+    )
     vehicle_id = fields.Many2one(
         'shuttle.vehicle',
         string='Vehicle',
@@ -72,6 +78,22 @@ class ShuttlePassengerGroup(models.Model):
         string='Company',
         default=lambda self: self.env.company,
         index=True
+    )
+    dispatcher_id = fields.Many2one(
+        'res.users',
+        string='Created By (Dispatcher)',
+        default=lambda self: self.env.user,
+        tracking=True,
+        index=True,
+        help='Dispatcher who created this group. Dispatchers can only see groups they created or have permission to.'
+    )
+    dispatcher_group_ids = fields.Many2many(
+        'res.users',
+        'shuttle_group_dispatcher_rel',
+        'group_id',
+        'user_id',
+        string='Authorized Dispatchers',
+        help='Dispatchers who have permission to view and manage this group.'
     )
 
     line_ids = fields.One2many(
@@ -236,6 +258,9 @@ class ShuttlePassengerGroup(models.Model):
         shuttle_vehicle_model = self.env['shuttle.vehicle']
         company_model = self.env['res.company']
         for vals in vals_list:
+            # Set dispatcher_id to current user if not provided
+            if 'dispatcher_id' not in vals:
+                vals['dispatcher_id'] = self.env.user.id
             if vals.get('vehicle_id'):
                 vehicle = shuttle_vehicle_model.browse(vals['vehicle_id'])
                 if vehicle:

@@ -47,6 +47,13 @@ class ShuttleTrip(models.Model):
         tracking=True,
         index=True
     )
+    companion_id = fields.Many2one(
+        'res.users',
+        string='Companion / Attendant',
+        tracking=True,
+        index=True,
+        help='Companion/attendant for passengers with same permissions as driver.'
+    )
     vehicle_id = fields.Many2one(
         'shuttle.vehicle',
         string='Vehicle',
@@ -1471,6 +1478,8 @@ class ShuttleTrip(models.Model):
                 # Set default values from group
                 if not trip.driver_id and trip.group_id.driver_id:
                     trip.driver_id = trip.group_id.driver_id
+                if not trip.companion_id and trip.group_id.companion_id:
+                    trip.companion_id = trip.group_id.companion_id
                 if not trip.vehicle_id and trip.group_id.vehicle_id:
                     trip.vehicle_id = trip.group_id.vehicle_id
                 if not trip.total_seats and trip.group_id.total_seats:

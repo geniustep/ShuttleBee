@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app string="ShuttleBee" name="shuttlebee"
+                <app string="ShuttleBee" name="shuttlebee" data-key="shuttlebee"
                      groups="shuttlebee.group_shuttle_manager">
                     <block title="Notification Settings" name="notification_settings">
                         <setting string="Default Notification Channel">
