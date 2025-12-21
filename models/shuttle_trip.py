@@ -87,6 +87,23 @@ class ShuttleTrip(models.Model):
         string='Planned Arrival Time',
         tracking=True
     )
+    create_return_trip = fields.Boolean(
+        string='Create Return Trip',
+        default=False,
+        copy=False,
+        store=True,
+        help='Create a return trip with reversed pickup and dropoff locations'
+    )
+    return_trip_start_time = fields.Datetime(
+        string='Return Trip Start Time',
+        copy=False,
+        help='Start time for the return trip'
+    )
+    return_trip_arrival_time = fields.Datetime(
+        string='Return Trip Arrival Time',
+        copy=False,
+        help='Arrival time for the return trip'
+    )
     actual_start_time = fields.Datetime(
         string='Actual Start Time',
         readonly=True,
@@ -1149,6 +1166,93 @@ class ShuttleTrip(models.Model):
             'context': {'default_trip_id': self.id}
         }
 
+    def action_open_create_return_trip_wizard(self):
+        """Open wizard to create return trip"""
+        self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_('Cannot create return trip: This trip has no passengers.'))
+        
+        return {
+            'name': _('Create Return Trip'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'shuttle.return.trip.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_trip_id': self.id,
+            }
+        }
+
+    def create_return_trip(self, start_time, arrival_time=False):
+        """Create a return trip that reverses the pickup and dropoff locations."""
+        self.ensure_one()
+        
+        # Allow creating return trip even without passengers (empty trip)
+        # if not self.line_ids:
+        #     raise UserError(_('Cannot create return trip: This trip has no passengers.'))
+        
+        # Determine return trip type (opposite of original)
+        return_trip_type = 'dropoff' if self.trip_type == 'pickup' else 'pickup'
+        
+        # Create return trip
+        return_trip_vals = {
+            'name': '%s - %s (Return)' % (self.name, return_trip_type.title()),
+            'trip_type': return_trip_type,
+            'date': self.date,
+            'planned_start_time': start_time,
+            'planned_arrival_time': arrival_time,
+            'driver_id': self.driver_id.id if self.driver_id else False,
+            'vehicle_id': self.vehicle_id.id if self.vehicle_id else False,
+            'companion_id': self.companion_id.id if self.companion_id else False,
+            'total_seats': self.total_seats,
+            'notes': self.notes,
+            'group_id': self.group_id.id if self.group_id else False,
+        }
+        
+        return_trip = self.env['shuttle.trip'].create(return_trip_vals)
+        
+        # Create trip lines by reversing pickup and dropoff stops from original trip
+        return_line_vals = []
+        stop_ids = set()
+        
+        # Only create lines if original trip has passengers
+        if not self.line_ids:
+            _logger.info('Creating empty return trip for trip %s (original trip has no passengers yet)', self.id)
+            return return_trip
+        
+        for original_line in self.line_ids:
+            # Swap pickup and dropoff locations
+            vals = {
+                'group_line_id': original_line.group_line_id.id if original_line.group_line_id else False,
+                'passenger_id': original_line.passenger_id.id,
+                'trip_id': return_trip.id,
+                'seat_count': original_line.seat_count,
+                'notes': original_line.notes,
+                # Swap stops: dropoff becomes pickup, pickup becomes dropoff
+                'pickup_stop_id': original_line.dropoff_stop_id.id if original_line.dropoff_stop_id else False,
+                'dropoff_stop_id': original_line.pickup_stop_id.id if original_line.pickup_stop_id else False,
+                # Swap GPS coordinates
+                'pickup_latitude': original_line.dropoff_latitude,
+                'pickup_longitude': original_line.dropoff_longitude,
+                'dropoff_latitude': original_line.pickup_latitude,
+                'dropoff_longitude': original_line.pickup_longitude,
+            }
+            return_line_vals.append(vals)
+            
+            # Collect stop IDs for linking
+            if vals['pickup_stop_id']:
+                stop_ids.add(vals['pickup_stop_id'])
+            if vals['dropoff_stop_id']:
+                stop_ids.add(vals['dropoff_stop_id'])
+        
+        if return_line_vals:
+            self.env['shuttle.trip.line'].create(return_line_vals)
+        
+        if stop_ids:
+            return_trip.stop_ids = [(6, 0, list(stop_ids))]
+        
+        return return_trip
+
     def _get_notification_template_values(self, line):
         """Get values for message template rendering"""
         passenger = line.passenger_id
@@ -1430,16 +1534,42 @@ class ShuttleTrip(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Override create to generate sequence and check conflicts"""
+        return_trip_vals = []
         for vals in vals_list:
             if vals.get('reference', _('New')) == _('New'):
                 vals['reference'] = self.env['ir.sequence'].next_by_code(
                     'shuttle.trip') or _('New')
+            
+            # Store return trip info before creating
+            if vals.get('return_trip_start_time'):
+                return_trip_vals.append({
+                    'start_time': vals.pop('return_trip_start_time'),
+                    'arrival_time': vals.pop('return_trip_arrival_time', False),
+                })
+            else:
+                return_trip_vals.append(None)
+                # Remove return trip fields if not creating return trip
+                vals.pop('create_return_trip', None)
+                vals.pop('return_trip_start_time', None)
+                vals.pop('return_trip_arrival_time', None)
         
         # Create records first
         trips = super().create(vals_list)
         
         # Check conflicts after creation (constraint will be called automatically, but we ensure it)
         trips._check_vehicle_and_driver_conflict()
+        
+        # Create return trips if requested
+        for trip, return_info in zip(trips, return_trip_vals):
+            if return_info:
+                try:
+                    # Create return trip immediately (even if no passengers yet)
+                    trip.create_return_trip(
+                        start_time=return_info['start_time'],
+                        arrival_time=return_info['arrival_time']
+                    )
+                except Exception as e:
+                    _logger.error('Failed to create return trip for trip %s: %s', trip.id, str(e), exc_info=True)
         
         return trips
     

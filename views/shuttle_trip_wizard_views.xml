@@ -46,6 +46,20 @@
                                        invisible="not create_dropoff_trip"/>
                             </group>
                         </page>
+                        <page string="Return Trip (Round Trip)">
+                            <group>
+                                <field name="create_return_trip"/>
+                                <field name="return_trip_start_time"
+                                       widget="datetime"
+                                       required="create_return_trip"
+                                       invisible="not create_return_trip"
+                                       placeholder="Start time for return trip"/>
+                                <field name="return_trip_arrival_time"
+                                       widget="datetime"
+                                       invisible="not create_return_trip"
+                                       placeholder="Arrival time for return trip"/>
+                            </group>
+                        </page>
                         <page string="Notes">
                             <field name="notes" nolabel="1" placeholder="Additional notes for the trips..."/>
                         </page>

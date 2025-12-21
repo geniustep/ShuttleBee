@@ -44,6 +44,10 @@
                             type="object" class="btn-secondary"
                             invisible="state not in ['draft', 'planned']"
                             confirm="This will reorder passengers based on the optimal route. Continue?"/>
+                    <button name="action_open_create_return_trip_wizard" string="🔄 Create Return Trip"
+                            type="object" class="btn-secondary"
+                            invisible="trip_type != 'pickup'"
+                            help="Create a return trip with reversed pickup and dropoff locations (only for pickup trips)"/>
                     <button name="action_confirm" string="Confirm Trip"
                             type="object" class="oe_highlight"
                             invisible="state != 'draft'"/>
@@ -110,6 +114,14 @@
                                    widget="datetime"/>
                             <field name="planned_arrival_time"
                                    widget="datetime"/>
+                            <field name="return_trip_start_time"
+                                   widget="datetime"
+                                   invisible="id"
+                                   placeholder="Return trip start time (optional - will create return trip if provided)"/>
+                            <field name="return_trip_arrival_time"
+                                   widget="datetime"
+                                   invisible="id"
+                                   placeholder="Return trip arrival time"/>
                             <field name="actual_start_time"
                                    widget="datetime"
                                    readonly="1"/>

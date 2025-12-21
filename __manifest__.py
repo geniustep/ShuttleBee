@@ -98,6 +98,7 @@ Version 2.0.0 Improvements:
         'views/shuttle_message_template_views.xml',
         'views/res_config_settings_views.xml',
         'views/shuttle_trip_wizard_views.xml',
+        'views/shuttle_return_trip_wizard_views.xml',
         'views/shuttle_waha_qr_wizard_views.xml',
         'views/shuttle_menus.xml',
 

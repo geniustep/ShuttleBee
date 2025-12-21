@@ -17,6 +17,7 @@ access_shuttle_notification_driver,shuttle.notification.driver,model_shuttle_not
 access_shuttle_notification_dispatcher,shuttle.notification.dispatcher,model_shuttle_notification,group_shuttle_dispatcher,1,1,1,0
 access_shuttle_notification_manager,shuttle.notification.manager,model_shuttle_notification,group_shuttle_manager,1,1,1,1
 access_shuttle_trip_wizard,shuttle.trip.wizard,model_shuttle_trip_wizard,base.group_user,1,1,1,0
+access_shuttle_return_trip_wizard,shuttle.return.trip.wizard,model_shuttle_return_trip_wizard,base.group_user,1,1,1,0
 access_shuttle_group_user,shuttle.passenger.group.user,model_shuttle_passenger_group,group_shuttle_user,1,0,0,0
 access_shuttle_group_driver,shuttle.passenger.group.driver,model_shuttle_passenger_group,group_shuttle_driver,1,0,0,0
 access_shuttle_group_dispatcher,shuttle.passenger.group.dispatcher,model_shuttle_passenger_group,group_shuttle_dispatcher,1,1,1,0
