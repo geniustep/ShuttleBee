@@ -1,0 +1,25 @@
+# ShuttleBee Odoo 18 Module Rules
+
+## Context7 Integration
+- Always use Context7 MCP tools automatically when:
+  - I need Odoo 18 documentation
+  - I need Python library documentation
+  - I need code generation or examples
+  - I ask about Odoo models, controllers, or views
+  - I need API integration examples
+
+## Odoo 18 Specific
+- Use Context7 library IDs:
+  - /websites/odoo_18_0_developer for developer docs
+  - /odoo/odoo with version __branch__18.0
+  - /websites/odoo_19_0_developer for latest features
+- Check Odoo ORM, security, and best practices
+- Verify compatibility with Odoo 18
+
+## Python Specific
+- Use Context7 for Python library documentation
+- Check compatibility with Odoo's Python version
+
+## Language
+- Prefer Arabic responses when user writes in Arabic
+- Use English for code comments and documentation
